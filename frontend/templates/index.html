@@ -1,0 +1,415 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>OS Monitoring Dashboard</title>
+
+    <link rel="icon" href="data:,">
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+
+        <div class="logo">
+            <h2>OS Monitor</h2>
+            <p>Hang Detection System</p>
+        </div>
+
+        <nav>
+            <a href="#overview" class="active">Dashboard</a>
+            <a href="#processes">Process Monitor</a>
+            <a href="#hangs">Hang Detection</a>
+            <a href="#memory">Memory Analysis</a>
+            <a href="#storage">Storage Monitor</a>
+            <a href="#deadlock">Deadlock Detection</a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <p>Operating Systems Project</p>
+            <small>System Monitoring v1.0</small>
+        </div>
+
+    </aside>
+
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+
+        <!-- HEADER -->
+        <header class="topbar">
+
+            <div>
+                <h1>System Dashboard</h1>
+                <p>Monitor system performance and application health</p>
+            </div>
+
+            <button id="refreshBtn" onclick="loadDashboard()">
+                Refresh Data
+            </button>
+
+        </header>
+
+
+        <!-- OVERVIEW -->
+        <section id="overview">
+
+            <h2 class="section-title">System Overview</h2>
+
+            <div class="stats-grid">
+
+                <div class="stat-card">
+                    <p>Total Processes</p>
+                    <h2 id="totalProcesses">--</h2>
+                    <span>Running process information</span>
+                </div>
+
+                <div class="stat-card">
+                    <p>Unresponsive Windows</p>
+                    <h2 id="hungProcesses">--</h2>
+                    <span>Application hang detection</span>
+                </div>
+
+                <div class="stat-card">
+                    <p>RAM Usage</p>
+                    <h2 id="ramUsage">--</h2>
+                    <span>System memory utilization</span>
+                </div>
+
+                <div class="stat-card">
+                    <p>Deadlock Status</p>
+                    <h2 id="deadlockStatus">--</h2>
+                    <span>Simulated resource analysis</span>
+                </div>
+
+            </div>
+
+        </section>
+
+<!-- PERFORMANCE CHARTS -->
+<section id="charts" class="dashboard-section">
+
+    <h2 class="section-title">Performance Analytics</h2>
+
+    <div class="chart-grid">
+
+        <div class="panel chart-panel">
+            <div class="panel-heading">
+                <h3>CPU Usage by Process</h3>
+                <span>Top processes by CPU utilization</span>
+            </div>
+            <canvas id="cpuChart"></canvas>
+        </div>
+
+        <div class="panel chart-panel">
+            <div class="panel-heading">
+                <h3>RAM Utilization</h3>
+                <span>Used versus available memory</span>
+            </div>
+            <canvas id="ramChart"></canvas>
+        </div>
+
+        <div class="panel chart-panel">
+            <div class="panel-heading">
+                <h3>Disk Usage</h3>
+                <span>Storage utilization by drive</span>
+            </div>
+            <canvas id="diskChart"></canvas>
+        </div>
+
+    </div>
+
+</section>
+
+
+
+        <!-- PROCESS MONITOR -->
+        <section id="processes" class="dashboard-section">
+
+            <h2 class="section-title">Process Monitoring</h2>
+
+            <div class="panel">
+
+                <div class="panel-heading">
+                    <h3>Top System Processes</h3>
+                    <span>CPU and memory utilization</span>
+                </div>
+
+                <div class="table-container">
+
+                    <table>
+
+                        <thead>
+                            <tr>
+                                <th>PID</th>
+                                <th>Process Name</th>
+                                <th>CPU (%)</th>
+                                <th>Memory (MB)</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="processTable">
+                            <tr>
+                                <td colspan="5">Loading process information...</td>
+                            </tr>
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- HANG DETECTION -->
+        <section id="hangs" class="dashboard-section">
+
+            <h2 class="section-title">Application Hang Detection</h2>
+
+            <div class="panel">
+
+                <div class="panel-heading">
+                    <h3>Application Window Status</h3>
+                    <span>Windows responsiveness monitoring</span>
+                </div>
+
+                <div class="table-container">
+
+                    <table>
+
+                        <thead>
+                            <tr>
+                                <th>PID</th>
+                                <th>Application</th>
+                                <th>Window Title</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="hangTable">
+                            <tr>
+                                <td colspan="4">Loading application information...</td>
+                            </tr>
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- MEMORY ANALYSIS -->
+        <section id="memory" class="dashboard-section">
+
+            <h2 class="section-title">Memory Analysis</h2>
+
+            <div class="stats-grid">
+
+                <div class="stat-card">
+                    <p>Total RAM</p>
+                    <h2 id="totalRam">--</h2>
+                </div>
+
+                <div class="stat-card">
+                    <p>Used RAM</p>
+                    <h2 id="usedRam">--</h2>
+                </div>
+
+                <div class="stat-card">
+                    <p>Available RAM</p>
+                    <h2 id="availableRam">--</h2>
+                </div>
+
+                <div class="stat-card">
+                    <p>Memory Utilization</p>
+                    <h2 id="memoryPercent">--</h2>
+                </div>
+
+            </div>
+
+            <div class="panel">
+
+                <div class="panel-heading">
+                    <h3>Top Memory-Consuming Processes</h3>
+                </div>
+
+                <div class="table-container">
+
+                    <table>
+
+                        <thead>
+                            <tr>
+                                <th>PID</th>
+                                <th>Process Name</th>
+                                <th>Memory (MB)</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="memoryTable">
+                            <tr>
+                                <td colspan="3">Loading memory information...</td>
+                            </tr>
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- STORAGE MONITOR -->
+        <section id="storage" class="dashboard-section">
+
+            <h2 class="section-title">Storage Monitoring</h2>
+
+            <div id="storageContainer" class="stats-grid">
+                <p>Loading storage information...</p>
+            </div>
+
+        </section>
+
+
+        <!-- DEADLOCK DETECTION -->
+        <section id="deadlock" class="dashboard-section">
+
+            <h2 class="section-title">Deadlock Detection</h2>
+
+            <div class="panel">
+
+                <div class="panel-heading">
+                    <h3>Wait-For Graph</h3>
+                    <span>Simulated resource allocation scenario</span>
+                </div>
+
+                <div id="deadlockResult">
+                    Loading deadlock analysis...
+                </div>
+
+                <div id="deadlockGraph" class="graph-container">
+                </div>
+
+            </div>
+
+        </section>
+
+<!-- APPLICATION RECOVERY SECTION -->
+
+<section id="recovery" class="dashboard-section">
+
+    <h2 class="section-title">Application Recovery</h2>
+
+    <div class="panel">
+
+        <div class="panel-heading">
+            <h3>Unresponsive Test Applications</h3>
+            <span>Controlled application recovery</span>
+        </div>
+
+        <p class="recovery-description">
+            Applications detected as NOT RESPONDING will appear here.
+            You can request recovery only for controlled test applications.
+        </p>
+
+        <div id="recoveryMessage" class="recovery-message">
+            Checking for unresponsive test applications...
+        </div>
+
+        <div class="table-container">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>PID</th>
+                        <th>Application</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+                <tbody id="recoveryTableBody">
+
+                    <tr>
+                        <td colspan="4">
+                            No recovery information available.
+                        </td>
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+    <div class="panel recovery-history-panel">
+
+        <div class="panel-heading">
+            <h3>Recovery History</h3>
+            <span>Previously recorded recovery attempts</span>
+        </div>
+
+        <div class="table-container">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>PID</th>
+                        <th>Action</th>
+                        <th>Result</th>
+                        <th>Timestamp</th>
+                    </tr>
+                </thead>
+
+                <tbody id="recoveryHistoryBody">
+
+                    <tr>
+                        <td colspan="4">No recovery records yet.</td>
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+        <!-- FOOTER -->
+        <footer>
+            <p>
+                OS-Level Application Hang Detection and Recovery System
+            </p>
+            <small>Developed using Python, Flask, SQLite and JavaScript</small>
+        </footer>
+
+    </main>
+    <script src="{{ url_for('static', filename='chart.umd.min.js') }}"></script>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+</html>
