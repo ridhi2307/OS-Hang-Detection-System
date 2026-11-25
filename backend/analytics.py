@@ -99,6 +99,7 @@ def get_deadlock_statistics():
     return result[0]
 
 
+
 def get_recovery_statistics():
 
     connection = get_database_connection()
@@ -107,7 +108,7 @@ def get_recovery_statistics():
     cursor.execute("""
         SELECT COUNT(*)
         FROM recovery_records
-        WHERE result = 'SUCCESS'
+        WHERE UPPER(result) LIKE '%SUCCESS%'
     """)
 
     successful_recoveries = cursor.fetchone()[0]
@@ -125,7 +126,6 @@ def get_recovery_statistics():
         "total_attempts": total_recoveries,
         "successful_recoveries": successful_recoveries
     }
-
 
 def generate_system_report():
 

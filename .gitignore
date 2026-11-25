@@ -1,26 +1,17 @@
-
-# Python
-venv/
-__pycache__/
-*.py[cod]
-.pytest_cache/
-
-# Node
-node_modules/
-dist/
-
-# Environment secrets
-.env
-.env.*
-
-# Logs
-*.log
-output/logs/
-
 # IDE and OS files
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Python virtual environment
+venv/
+__pycache__/
+*.py[cod]
+
+# Node dependencies and build files
+frontend-react/node_modules/
+frontend-react/dist/
+
 # Local database
 database/*.db
 database/*.sqlite
@@ -30,8 +21,3 @@ database/*.sqlite3
 output/reports/
 output/charts/
 output/logs/
-
-# Python cache
-__pycache__/
-# Old frontend backup
-frontend-old/

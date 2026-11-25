@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   LayoutDashboard,
@@ -12,6 +11,7 @@ import {
   Bell,
   Search,
   Menu,
+  History,
 } from "lucide-react";
 
 import {
@@ -31,6 +31,7 @@ const navigation = [
   { name: "Memory & Storage", icon: MemoryStick },
   { name: "Deadlock Detection", icon: Network },
   { name: "Recovery Center", icon: ShieldCheck },
+  { name: "Recovery History", icon: History },
 ];
 
 function App() {
@@ -140,6 +141,16 @@ function App() {
     }
   };
 
+  // Download PDF or CSV report
+  const downloadReport = (format) => {
+    const endpoint =
+      format === "pdf"
+        ? "/api/reports/pdf"
+        : "/api/reports/csv";
+
+    globalThis.window.location.href = endpoint;
+  };
+
   // Only show the controlled test application
   const testApplications = (
     dashboardData?.hang_detection?.data ?? []
@@ -150,6 +161,91 @@ function App() {
         "os hang detection - test application"
       )
   );
+
+  const systemInsights = [];
+
+  if (dashboardData) {
+    // Memory insights
+    const memoryUsage = Number(
+      dashboardData.memory?.system?.usage_percent ?? 0
+    );
+
+    if (memoryUsage >= 85) {
+      systemInsights.push({
+        title: "High Memory Usage",
+        status: "warning",
+        message: `RAM usage is ${memoryUsage}%. Most system memory is currently occupied.`,
+        recommendation: "Close unnecessary applications and browser tabs to free RAM.",
+      });
+    } else {
+      systemInsights.push({
+        title: "Memory Status",
+        status: "healthy",
+        message: `RAM usage is ${memoryUsage}%.`,
+        recommendation: "Memory usage is below the high-usage threshold.",
+      });
+    }
+
+    // Storage insights
+    const disks = dashboardData.storage ?? [];
+    const highUsageDisks = disks.filter(
+      (disk) => Number(disk.usage_percent) >= 85
+    );
+
+    if (highUsageDisks.length > 0) {
+      systemInsights.push({
+        title: "Storage Space Running Low",
+        status: "warning",
+        message: `${highUsageDisks.map((disk) => disk.device).join(", ")} is using at least 85% of its capacity.`,
+        recommendation: "Review large files and remove unnecessary data.",
+      });
+    } else {
+      systemInsights.push({
+        title: "Storage Status",
+        status: "healthy",
+        message: "No monitored drive has reached 85% usage.",
+        recommendation: "Continue monitoring available disk space.",
+      });
+    }
+
+    // Application hang insights
+    const unresponsive = Number(
+      dashboardData.hang_detection?.unresponsive_windows ?? 0
+    );
+
+    if (unresponsive > 0) {
+      systemInsights.push({
+        title: "Unresponsive Applications",
+        status: "warning",
+        message: `${unresponsive} application window(s) are not responding.`,
+        recommendation: "Check the affected application before attempting recovery.",
+      });
+    } else {
+      systemInsights.push({
+        title: "Application Status",
+        status: "healthy",
+        message: "No unresponsive application windows were detected.",
+        recommendation: "Continue monitoring application responsiveness.",
+      });
+    }
+
+    // Deadlock demonstration insights
+    if (dashboardData.deadlock?.deadlock_detected) {
+      systemInsights.push({
+        title: "Deadlock Demonstration",
+        status: "warning",
+        message: "A circular wait was detected in the simulated wait-for graph.",
+        recommendation: "Review the resource dependencies in the Deadlock Detection page.",
+      });
+    } else {
+      systemInsights.push({
+        title: "Deadlock Demonstration",
+        status: "healthy",
+        message: "No cycle was detected in the simulated wait-for graph.",
+        recommendation: "Continue monitoring resource dependencies.",
+      });
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#090d18] text-slate-200">
@@ -253,7 +349,11 @@ function App() {
           {/* Dashboard Body */}
           <section className="p-5 md:p-8">
 
-            <div className="mb-7">
+            {/* Overview Welcome */}
+            <div
+              style={{ display: activePage === "Overview" ? "block" : "none" }}
+              className="mb-7"
+            >
               <p className="text-sm text-slate-400">
                 Welcome to OS Guardian
               </p>
@@ -274,11 +374,30 @@ function App() {
                 Monitor processes, detect application hangs, and manage
                 controlled recovery.
               </p>
+
+              {/* Report Download Buttons */}
+              <div className="mt-5 flex flex-wrap gap-3">
+                <button
+                  onClick={() => downloadReport("pdf")}
+                  className="rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-500"
+                >
+                  Download PDF Report
+                </button>
+
+                <button
+                  onClick={() => downloadReport("csv")}
+                  className="rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-500"
+                >
+                  Download CSV Report
+                </button>
+              </div>
             </div>
 
             {/* Statistics Cards */}
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
-
+            <div
+              style={{ display: activePage === "Overview" ? "grid" : "none" }}
+              className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4"
+            >
               <StatCard
                 title="Total Processes"
                 value={dashboardData?.processes?.total ?? "--"}
@@ -312,11 +431,13 @@ function App() {
                 subtitle="Detected disk partitions"
                 icon={HardDrive}
               />
-
             </div>
 
             {/* CPU and Memory Charts */}
-            <div className="mt-7 grid grid-cols-1 gap-5 xl:grid-cols-2">
+            <div
+              style={{ display: activePage === "Overview" ? "grid" : "none" }}
+              className="mt-7 grid grid-cols-1 gap-5 xl:grid-cols-2"
+            >
 
               {/* CPU Chart */}
               <div className="rounded-2xl border border-slate-800 bg-[#111827] p-6">
@@ -430,12 +551,76 @@ function App() {
                   )}
                 </div>
               </div>
+            </div>
 
+            {/* System Insights & Recommendations */}
+            <div
+              className="mt-8 mb-6 rounded-xl border border-slate-700 bg-slate-900 p-5"
+              style={{ display: activePage === "Overview" ? "block" : "none" }}
+            >
+              <div className="mb-5">
+                <h2 className="text-xl font-semibold text-white">
+                  System Insights & Recommendations
+                </h2>
+                <p className="mt-1 text-sm text-slate-400">
+                  Helpful suggestions based on your current system monitoring data.
+                </p>
+              </div>
+
+              {!dashboardData ? (
+                <p className="text-sm text-slate-400">
+                  Waiting for system data...
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  {systemInsights.map((insight, index) => (
+                    <div
+                      key={index}
+                      className={`rounded-lg border p-4 ${
+                        insight.status === "warning"
+                          ? "border-amber-500/30 bg-amber-500/10"
+                          : "border-emerald-500/30 bg-emerald-500/10"
+                      }`}
+                    >
+                      <div className="mb-2 flex items-center justify-between">
+                        <h3 className="font-semibold text-white">
+                          {insight.title}
+                        </h3>
+
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs font-medium ${
+                            insight.status === "warning"
+                              ? "bg-amber-500/20 text-amber-400"
+                              : "bg-emerald-500/20 text-emerald-400"
+                          }`}
+                        >
+                          {insight.status === "warning" ? "Warning" : "Healthy"}
+                        </span>
+                      </div>
+
+                      <p className="mb-3 text-sm text-slate-300">
+                        {insight.message}
+                      </p>
+
+                      <div className="rounded-md bg-slate-950/50 p-3">
+                        <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                          Recommendation
+                        </p>
+                        <p className="text-sm text-slate-200">
+                          {insight.recommendation}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Process Monitor */}
-            <div className="mt-7 rounded-2xl border border-slate-800 bg-[#111827] p-6">
-
+            <div
+              style={{ display: activePage === "Process Monitor" ? "block" : "none" }}
+              className="mt-7 rounded-2xl border border-slate-800 bg-[#111827] p-6"
+            >
               <div className="mb-5 flex items-center justify-between">
                 <div>
                   <h4 className="font-semibold text-white">
@@ -501,8 +686,10 @@ function App() {
             </div>
 
             {/* Hang Detection */}
-            <div className="mt-7 rounded-2xl border border-slate-800 bg-[#111827] p-6">
-
+            <div
+              style={{ display: activePage === "Hang Detection" ? "block" : "none" }}
+              className="mt-7 rounded-2xl border border-slate-800 bg-[#111827] p-6"
+            >
               <div className="mb-5">
                 <h4 className="font-semibold text-white">
                   Application Hang Detection
@@ -563,8 +750,10 @@ function App() {
             </div>
 
             {/* Memory and Storage */}
-            <div className="mt-7 grid grid-cols-1 gap-5 xl:grid-cols-2">
-
+            <div
+              style={{ display: activePage === "Memory & Storage" ? "grid" : "none" }}
+              className="mt-7 grid grid-cols-1 gap-5 xl:grid-cols-2"
+            >
               {/* Memory Details */}
               <div className="rounded-2xl border border-slate-800 bg-[#111827] p-6">
                 <h4 className="font-semibold text-white">
@@ -663,7 +852,10 @@ function App() {
             </div>
 
             {/* Deadlock Detection */}
-            <div className="mt-7 rounded-2xl border border-slate-800 bg-[#111827] p-6">
+            <div
+              style={{ display: activePage === "Deadlock Detection" ? "block" : "none" }}
+              className="mt-7 rounded-2xl border border-slate-800 bg-[#111827] p-6"
+            >
               <h4 className="font-semibold text-white">
                 Deadlock Detection
               </h4>
@@ -735,8 +927,10 @@ function App() {
             </div>
 
             {/* Recovery Center */}
-            <div className="mt-7 rounded-2xl border border-slate-800 bg-[#111827] p-6">
-
+            <div
+              style={{ display: activePage === "Recovery Center" ? "block" : "none" }}
+              className="mt-7 rounded-2xl border border-slate-800 bg-[#111827] p-6"
+            >
               <div className="mb-5">
                 <h4 className="font-semibold text-white">
                   Application Recovery Center
@@ -812,8 +1006,10 @@ function App() {
             </div>
 
             {/* Recovery History */}
-            <div className="mt-7 rounded-2xl border border-slate-800 bg-[#111827] p-6">
-
+            <div
+              style={{ display: activePage === "Recovery History" ? "block" : "none" }}
+              className="mt-7 rounded-2xl border border-slate-800 bg-[#111827] p-6"
+            >
               <div className="mb-5">
                 <h4 className="font-semibold text-white">
                   Recovery History
@@ -884,33 +1080,69 @@ function App() {
               </div>
             </div>
 
-            {/* System Status */}
-            <div className="mt-7 rounded-2xl border border-slate-800 bg-[#111827] p-6">
-              <h4 className="font-semibold text-white">
-                System Status
-              </h4>
+            {/* Module Guide */}
+<div
+  style={{ display: activePage === "Overview" ? "block" : "none" }}
+  className="mt-7 rounded-2xl border border-slate-800 bg-[#111827] p-6"
+>
+  <h4 className="text-lg font-semibold text-white">
+    OS Guardian Module Guide
+  </h4>
 
-              <p className="mt-2 text-sm text-slate-500">
-                Monitoring modules connected to the Python backend.
-              </p>
+  <p className="mt-2 text-sm text-slate-400">
+    An overview of the major components of the system and their functions.
+  </p>
 
-              <div className="mt-5 flex flex-wrap gap-3">
-                {[
-                  "Process Monitor",
-                  "Hang Detector",
-                  "Memory Analyzer",
-                  "Deadlock Detector",
-                  "Recovery Manager",
-                ].map((module) => (
-                  <span
-                    key={module}
-                    className="rounded-lg border border-slate-700 bg-slate-800/60 px-3 py-2 text-xs text-slate-300"
-                  >
-                    {module}
-                  </span>
-                ))}
-              </div>
-            </div>
+  <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+
+    {[
+      {
+        title: "Process Monitor",
+        description:
+          "Monitors running processes and displays their CPU and memory consumption."
+      },
+      {
+        title: "Hang Detection",
+        description:
+          "Identifies visible Windows application windows that have stopped responding."
+      },
+      {
+        title: "Memory Analyzer",
+        description:
+          "Tracks RAM utilization and identifies processes consuming significant memory."
+      },
+      {
+        title: "Storage Monitor",
+        description:
+          "Displays disk usage and helps identify drives running low on available space."
+      },
+      {
+        title: "Deadlock Detector",
+        description:
+          "Analyzes a simulated wait-for graph to identify circular waiting conditions."
+      },
+      {
+        title: "Recovery Manager",
+        description:
+          "Safely attempts graceful recovery of the controlled unresponsive test application."
+      }
+    ].map((module) => (
+      <div
+        key={module.title}
+        className="rounded-xl border border-slate-700 bg-slate-800/50 p-4"
+      >
+        <h5 className="font-semibold text-blue-400">
+          {module.title}
+        </h5>
+
+        <p className="mt-2 text-sm leading-6 text-slate-400">
+          {module.description}
+        </p>
+      </div>
+    ))}
+
+  </div>
+</div>
 
           </section>
         </main>

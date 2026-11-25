@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, send_file
 from backend.process_monitor import get_running_processes
 from backend.hang_detector import get_application_windows
 from backend.memory_analyzer import (
@@ -8,6 +8,10 @@ from backend.memory_analyzer import (
 from backend.storage_monitor import get_storage_information
 from backend.database import create_tables, get_connection
 from backend.recovery_manager import recover_test_application
+from backend.report_generator import (
+    generate_csv_report,
+    generate_pdf_report
+)
 
 
 app = Flask(
@@ -435,6 +439,29 @@ def recovery_history_api():
         "records": records
     })
 
+
+@app.route("/api/reports/csv", methods=["GET"])
+def download_csv_report():
+    report_path = generate_csv_report()
+
+    return send_file(
+        report_path,
+        as_attachment=True,
+        download_name="OS_Guardian_System_Report.csv",
+        mimetype="text/csv"
+    )
+
+
+@app.route("/api/reports/pdf", methods=["GET"])
+def download_pdf_report():
+    report_path = generate_pdf_report()
+
+    return send_file(
+        report_path,
+        as_attachment=True,
+        download_name="OS_Guardian_System_Report.pdf",
+        mimetype="application/pdf"
+    )
 
 # -----------------------------------------
 # START FLASK SERVER
