@@ -1,18 +1,19 @@
-
 # OS Guardian
 ### OS-Level Application Hang Detection and Recovery System
 
-OS Guardian is a system monitoring application designed to monitor running processes, detect unresponsive applications, analyze memory and storage utilization, identify simulated deadlocks, and perform controlled application recovery.
+OS Guardian is an integrated Python-and-Bash application designed to simulate and analyze major operating-system resource-management functions. It monitors running processes, detects unresponsive applications, analyzes memory and storage utilization, identifies simulated deadlocks, and provides controlled application recovery.
 
 ## Features
 
-- **Process Monitoring:** Monitor running processes, CPU usage, and memory consumption.
-- **Hang Detection:** Detect unresponsive Windows applications.
-- **Memory Analysis:** Monitor system RAM utilization.
-- **Storage Monitoring:** Track disk usage across partitions.
-- **Deadlock Detection:** Identify circular waits using a simulated wait-for graph.
-- **Application Recovery:** Safely terminate a controlled, unresponsive test application.
+- **Process Monitoring:** Monitor running processes, CPU usage, memory consumption, and process status.
+- **Hang Detection:** Identify unresponsive Windows applications.
+- **Memory Analysis:** Monitor system RAM utilization and memory-consuming processes.
+- **Storage Monitoring:** Track disk usage across available partitions.
+- **Deadlock Detection:** Demonstrate circular waits using a simulated wait-for graph.
+- **Application Recovery:** Perform controlled recovery of a test application.
 - **Recovery History:** Store and display recovery attempts using SQLite.
+- **Analytics and Reports:** Generate analytical results and export reports in CSV and PDF formats.
+- **System Information Collection:** Use Bash commands and PowerShell to collect system-level information.
 
 ## Technologies Used
 
@@ -25,32 +26,58 @@ OS Guardian is a system monitoring application designed to monitor running proce
 
 ### Frontend
 - React.js
-- Tailwind CSS
+- Vite
 - Recharts
 - Lucide React
+- CSS
+
+### System-Level Integration
+- Bash
+- Git Bash
+- PowerShell
 
 ### Development Tools
 - VS Code
 - Git and GitHub
+
+## Project Architecture
+
+OS Guardian uses Python for system monitoring, resource analysis, application recovery, and backend API services. Bash handles shell-level system information collection and automates application startup. The React frontend communicates with the Flask backend through REST API endpoints.
 
 ## Project Structure
 
 ```text
 OS-Hang-Detection-System/
 ├── backend/
+│   ├── analytics.py
+│   ├── app.py
+│   ├── database.py
+│   ├── deadlock_detector.py
+│   ├── hang_detector.py
+│   ├── memory_analyzer.py
+│   ├── process_monitor.py
+│   ├── recovery_manager.py
+│   ├── report_generator.py
+│   └── storage_monitor.py
 ├── frontend/
 ├── frontend-react/
-├── tests/
+│   ├── public/
+│   ├── src/
+│   ├── package.json
+│   └── vite.config.js
 ├── config/
 ├── database/
 ├── docs/
 ├── output/
 ├── screenshots/
+├── tests/
 ├── requirements.txt
+├── run.sh
+├── run_project.py
 └── README.md
 ```
 
-## Installation
+## Installation and Setup
 
 ### 1. Clone the repository
 
@@ -59,67 +86,76 @@ git clone https://github.com/ridhi2307/OS-Hang-Detection-System.git
 cd OS-Hang-Detection-System
 ```
 
-### 2. Create a Python virtual environment
-
-```bash
-python -m venv venv
-```
-
-Activate it on Windows:
+### 2. Create and activate a Python virtual environment
 
 ```powershell
+python -m venv venv
 .\venv\Scripts\Activate.ps1
 ```
 
 ### 3. Install Python dependencies
 
-```bash
+```powershell
 pip install -r requirements.txt
 ```
 
 ### 4. Install frontend dependencies
 
-```bash
+```powershell
 cd frontend-react
 npm install
+cd ..
 ```
 
-### 5. Start the Flask backend
+### 5. Run OS Guardian
 
-Open a terminal in the project root:
+**Recommended: Using Git Bash**
+
+Open Git Bash in the project directory and execute:
 
 ```bash
+bash run.sh
+```
+
+This script collects system information, activates the Python virtual environment, and launches the Flask backend and React frontend.
+
+Alternatively, you can start the backend and frontend separately:
+
+**Backend:**
+```powershell
 python -m backend.app
 ```
 
-### 6. Start the React frontend
-
-Open another terminal:
-
-```bash
+**Frontend (in another terminal):**
+```powershell
 cd frontend-react
 npm run dev
 ```
 
-Open the local URL displayed by Vite, usually:
+Open the application at:
 
 http://localhost:5173/
 
+The Flask backend runs at:
+
+http://127.0.0.1:5000/
+
 ## Safety and Limitations
 
-- Hang detection currently monitors visible Windows application windows.
-- Deadlock detection uses a simulated wait-for graph.
+- Hang detection monitors visible Windows application windows.
+- Deadlock detection currently uses a simulated wait-for graph.
 - Recovery is restricted to the controlled test application.
-- Recovery uses graceful termination and does not force-kill arbitrary processes.
+- Recovery uses graceful termination rather than forcefully terminating arbitrary processes.
+- Bash system-information collection runs through Git Bash on Windows; detailed resource monitoring is handled by Python.
 
 ## Project Status
 
-Core monitoring, hang detection, simulated deadlock detection, controlled recovery, and recovery history have been implemented and tested.
+Core monitoring, hang detection, memory and storage analysis, simulated deadlock detection, controlled recovery, recovery history, and report generation have been implemented.
 
-Further improvements and testing are ongoing.
+Testing and further improvements are ongoing.
 
 ## Author
 
-Ridhima Singh
+**Ridhima Singh**
 
 GitHub: https://github.com/ridhi2307
