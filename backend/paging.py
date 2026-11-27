@@ -13,18 +13,22 @@ def compare_pages(sequence, frames):
         raise ValueError("Enter 1 to 40 page numbers (0–99), separated by spaces or commas.")
     pages = list(map(int, tokens))
     results = {}
-    for policy in ("FIFO", "LRU"):
+    for policy in ("FIFO", "LRU", "Optimal"):
         resident = []
         order = []
         trace = []
         faults = 0
-        for page in pages:
+        for index, page in enumerate(pages):
             hit = page in resident
             evicted = None
             if not hit:
                 faults += 1
                 if len(resident) == frames:
-                    evicted = order.pop(0)
+                    evicted = order[0]
+                    if policy == "Optimal":
+                        future = pages[index+1:]
+                        evicted = max(resident, key=lambda item: future.index(item) if item in future else len(future))
+                    order.remove(evicted)
                     resident[resident.index(evicted)] = page
                 else:
                     resident.append(page)

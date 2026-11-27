@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, render_template, request, send_file
 from backend.live_deadlock import demo
+from backend.graph_lab import SCENARIOS, simulate
 from backend.resource_labs import LABS
 from backend.paging import compare_pages
 from backend.process_monitor import get_running_processes
@@ -10,7 +11,10 @@ from backend.memory_analyzer import (
 )
 from backend.storage_monitor import get_storage_information
 from backend.database import create_tables, get_connection
-from backend.recovery_manager import recover_test_application
+from backend import health
+from backend.recovery_manager import apply_action, controlled
+import psutil
+from contextlib import closing
 from backend.report_generator import (
     generate_csv_report,
     generate_pdf_report
@@ -119,70 +123,15 @@ def save_storage_records(disks):
 
 def run_deadlock_analysis():
 
-    processes = ["P1", "P2", "P3"]
-
-    allocations = {
-        "P1": "R1",
-        "P2": "R2",
-        "P3": "R3"
-    }
-
-    requests = {
-        "P1": "R2",
-        "P2": "R3",
-        "P3": "R1"
-    }
-
-    graph = {process: [] for process in processes}
-
-    for waiting_process, requested_resource in requests.items():
-
-        for holding_process, held_resource in allocations.items():
-
-            if requested_resource == held_resource:
-                graph[waiting_process].append(holding_process)
-
-    visited = set()
-    recursion_stack = set()
-
-    def detect_cycle(process):
-
-        visited.add(process)
-        recursion_stack.add(process)
-
-        for neighbor in graph[process]:
-
-            if neighbor not in visited:
-
-                if detect_cycle(neighbor):
-                    return True
-
-            elif neighbor in recursion_stack:
-                return True
-
-        recursion_stack.remove(process)
-
-        return False
-
-    deadlock_detected = False
-
-    for process in graph:
-
-        if process not in visited:
-
-            if detect_cycle(process):
-                deadlock_detected = True
-                break
-
-    return {
-        "deadlock_detected": deadlock_detected,
-        "graph": graph,
-        "description": (
-            "Circular wait detected in simulated processes."
-            if deadlock_detected
-            else "No circular wait detected."
-        )
-    }
+    # Legacy API clients expect a wait-for graph for the three-process exercise.
+    final = simulate(SCENARIOS["Three-process circular wait"])[-1]
+    graph = {}
+    for i, request_row in enumerate(final["requests"]):
+        graph[f"P{i+1}"] = [
+            f"P{j+1}" for j,allocation in enumerate(final["held"])
+            if any(request and held for request,held in zip(request_row,allocation))
+        ]
+    return dict(deadlock_detected=bool(final["deadlocked"]), graph=graph, description=final["text"])
 
 
 def save_deadlock_record(result):
@@ -210,7 +159,7 @@ def save_deadlock_record(result):
 @app.route("/")
 def home():
 
-    return render_template("index.html", labs=LABS)
+    return render_template("index.html", labs=LABS, scenarios=SCENARIOS)
 
 # -----------------------------------------
 # PROCESS MONITORING API
@@ -229,6 +178,17 @@ def live_deadlock_api():
         return jsonify(demo.act(data["action"], data.get("run_id")))
     except ValueError as error:
         return jsonify(error=str(error)), 409
+
+
+@app.post("/api/lab/graph")
+def graph_lab():
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify(error="Submit a scenario."), 400
+    try:
+        return jsonify(steps=simulate(data.get("scenario"), data.get("victim")))
+    except ValueError as error:
+        return jsonify(error=str(error)), 400
 
 
 @app.post("/api/lab/<name>")
@@ -351,12 +311,17 @@ def deadlock_api():
 @app.route("/api/dashboard")
 def dashboard_api():
 
-    processes = get_running_processes(
-        sample_interval=0.2,
-        limit=25
-    )
-
-    windows = get_application_windows()
+    processes = get_running_processes(sample_interval=0.2, limit=None)
+    snapshot = health.sample(force=request.args.get("recheck")=="1")
+    windows = snapshot["windows"]
+    snapshot = {**snapshot, "apps": [app.copy() for app in snapshot["apps"]]}
+    for item in snapshot["apps"]:
+        item["supported"] = False
+        if item["incident"]:
+            try:
+                item["supported"] = controlled(psutil.Process(item["pid"]))
+            except psutil.Error:
+                pass
 
     memory = get_memory_information()
 
@@ -367,11 +332,11 @@ def dashboard_api():
     deadlock = run_deadlock_analysis()
 
     # Save all collected monitoring data
-    save_process_records(processes)
+    save_process_records(processes[:25])
     save_hang_records(windows)
     save_memory_record(memory)
     save_storage_records(disks)
-    save_deadlock_record(deadlock)
+    # Educational simulations do not count as host incidents.
 
     hung_count = sum(
         1 for window in windows
@@ -379,6 +344,7 @@ def dashboard_api():
     )
 
     return jsonify({
+        "health": snapshot, "cpu": psutil.cpu_percent(interval=0.1), "running": len(psutil.pids()),
         "processes": {
             "total": len(processes),
             "data": processes
@@ -406,48 +372,31 @@ def dashboard_api():
 @app.route("/api/recovery", methods=["POST"])
 def recovery_api():
 
-    data = request.get_json(silent=True) or {}
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict) or data.get("confirmed") is not True:
+        return jsonify(success=False, message="Explicit confirmation required."), 400
+    try:
+        incident = data.get("incident")
+        if "incident" not in data and type(data.get("pid")) is int:
+            # The original React client sends only a confirmed PID.
+            match = next((a for a in health.sample()["apps"] if a["pid"] == data["pid"]), None)
+            incident = match["incident"] if match else None
+        result = apply_action(data.get("pid"), incident, data.get("method","end"))
+        return jsonify(result), 200 if result["success"] else 409
+    except ValueError as error:
+        return jsonify(success=False,message=str(error)), 409
 
-    pid = data.get("pid")
-    confirmed = data.get("confirmed", False)
 
-    if pid is None:
-        return jsonify({
-            "success": False,
-            "message": "Process ID is required."
-        }), 400
+@app.post("/api/health/threshold")
+def set_threshold():
+    data = request.get_json(silent=True)
+    seconds = data.get("seconds") if isinstance(data, dict) else None
+    if type(seconds) is not int or not 2 <= seconds <= 60:
+        return jsonify(error="Choose a threshold from 2 to 60 seconds."), 400
+    with closing(get_connection()) as db, db:
+        db.execute("UPDATE detection_settings SET seconds=? WHERE id=1",(seconds,))
+    return jsonify(seconds=seconds)
 
-    if confirmed is not True:
-        return jsonify({
-            "success": False,
-            "message": "Recovery confirmation is required."
-        }), 400
-
-    result = recover_test_application(
-        pid=pid,
-        confirmed=confirmed
-    )
-
-    # Save recovery attempt in SQLite
-    connection = get_connection()
-    cursor = connection.cursor()
-
-    cursor.execute("""
-        INSERT INTO recovery_records
-        (pid, action, result)
-        VALUES (?, ?, ?)
-    """, (
-        pid,
-        "Graceful termination",
-        result["message"]
-    ))
-
-    connection.commit()
-    connection.close()
-
-    status_code = 200 if result["success"] else 400
-
-    return jsonify(result), status_code
 
 # RECOVERY HISTORY API
 @app.route("/api/recovery/history")
@@ -512,6 +461,7 @@ def download_pdf_report():
 if __name__ == "__main__":
 
     create_tables()
+    health.start_monitor()
 
     print("\nStarting OS Monitoring Flask Backend...")
     print("Open http://127.0.0.1:5000 in your browser.")

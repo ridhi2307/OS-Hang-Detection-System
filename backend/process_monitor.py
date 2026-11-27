@@ -37,6 +37,7 @@ def get_running_processes(sample_interval=1, limit=25):
 
             process_data.append({
                 "pid": process.pid,
+                "started": process.create_time(),
                 "name": process.name(),
                 "cpu_percent": round(cpu_usage, 2),
                 "memory_mb": round(memory_mb, 2),

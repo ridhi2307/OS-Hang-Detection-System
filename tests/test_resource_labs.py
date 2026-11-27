@@ -18,7 +18,7 @@ class ResourceLabs(unittest.TestCase):
 
     def test_disk_reference_and_duplicates(self):
         runs = disk(dict(requests="98 183 37 122 14 124 65 67", head="53"))["runs"]
-        self.assertEqual([run["metrics"][0] for run in runs], [640, 236, 299])
+        self.assertEqual([run["metrics"][0] for run in runs], [640, 236, 299, 331, 382, 322])
         self.assertEqual(disk(dict(requests="40 40", head="40"))["runs"][2]["metrics"], [0, 0])
 
     def test_fragmentation(self):

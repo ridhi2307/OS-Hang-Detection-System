@@ -1,0 +1,110 @@
+/* Shared visual system for the Windows monitoring console. */
+:root {
+    --accent:#007c87; --violet:#7855bd; --hot:#ae4c22;
+    --glass:#ffffffec; --soft:#edf5f9; --secondary:#516578;
+    --surface:var(--glass); --control:#fff; --ink:#173045; --line:#c5d8e3;
+    --teal:#007681; --chart-cpu:#008e99; --chart-free:#9869df;
+}
+:root[data-theme="dark"] {
+    --accent:#37e4d7; --violet:#b791ff; --hot:#ffae78; --ink:#edf5ff; --line:#2b3a57;
+    --glass:linear-gradient(120deg,#111e33ed,#10172bee); --soft:#142139; --secondary:#adc0d4;
+    --surface:#111d31; --control:#16233b; --muted:var(--secondary); --teal:#056978;
+    --chart-label:#b9c9de; --chart-grid:#26334b; --chart-cpu:#27cecf; --chart-free:#9763e8; --chart-disk:#4baff9;
+}
+body { font-family:"Segoe UI Variable","Segoe UI",system-ui,sans-serif; background:#eff4f9; }
+[data-theme="dark"] body { background:radial-gradient(ellipse at 73% -25%,#173556 0,transparent 52%),#080e1c; }
+.sidebar,[data-theme="dark"] .sidebar { background:linear-gradient(165deg,#0d1a31,#0a1021 74%,#102640); border-right:1px solid #243651; padding:24px 14px 16px; }
+.logo { padding:0 6px; }
+.logo h2 { line-height:1.1; font-size:20px; }
+.brand-sign { border:2px solid #39d8d0; color:#55e9e2; box-shadow:0 0 18px #12afa833; font-size:27px; }
+.sidebar nav { margin-top:23px; gap:3px; }
+.sidebar nav a { display:flex; align-items:center; gap:11px; color:#c1cde1; padding:8px 12px; }
+.sidebar nav svg { flex:none; width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round; }
+.sidebar nav a.active,.sidebar nav a:hover { background:#182b4d; color:#71fff0; }
+.sidebar nav a.active { box-shadow:inset 3px 0 #36dcd6; }
+.main-content { padding:clamp(16px,2.8vw,44px); }
+h1,h2,h3,h4 { letter-spacing:-.032em; }
+.topbar { border-bottom:1px solid var(--line); padding-bottom:20px; }
+.topbar h1 { font-size:clamp(25px,2.7vw,39px); }
+.topbar h1:before { content:"∿";color:var(--accent);margin-right:10px; }
+.panel,.storage-card,.stat-card,[data-theme="dark"] :is(.panel,.storage-card,.stat-card) {
+    background:var(--glass); border:1px solid var(--line);border-radius:14px; box-shadow:0 8px 25px #0610270b;
+}
+.panel + .panel,.live-demo { margin-top:18px; }
+.panel p,.panel small,.storage-card p,.topbar p { color:var(--secondary); }
+.panel h3 { margin-bottom:8px; }
+a { color:var(--accent); }
+button,select,input,textarea { font:inherit; }
+button,select,.tools a,.theme-control,.resource-lab select,.resource-lab button {
+    border:1px solid var(--line); border-radius:8px;background:var(--control);color:var(--ink);padding:8px 11px;
+}
+button { cursor:pointer;font-weight:600;font-size:13px; }
+button:hover:enabled,.tools a:hover { border-color:var(--accent); }
+button:disabled { cursor:default;opacity:.48; }
+button, a { transition:background-color .16s,border-color .16s; }
+input,textarea { background:var(--control);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:8px; }
+select { font-size:14px; }
+.feature-panel { background:radial-gradient(circle at 90% 10%,#1a3366,transparent 60%),linear-gradient(115deg,#0c343d,#111830);border:1px solid #23576a;padding:24px 30px; }
+.eyebrow,.feature-panel .eyebrow { font:600 11px/1.4 "Segoe UI",sans-serif;letter-spacing:.13em;text-transform:uppercase;color:#61e8db;margin:0 0 7px; }
+.feature-panel a { display:inline-block;text-decoration:none;color:#052629;background:#5be8dc;padding:8px 14px;border-radius:8px;font-size:14px; }
+.pulse-scope { width:160px;height:88px;flex:none;background:repeating-linear-gradient(0deg,transparent 0 18px,#40d9d317 19px),repeating-linear-gradient(90deg,transparent 0 18px,#40d9d317 19px); }
+.pulse-scope svg { width:100%;height:100%;stroke:#53e9dd;stroke-width:3;fill:none; }
+.health-kpis { display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px; }
+.health-kpis .stat-card { padding:16px;border-top:2px solid var(--accent); }
+.health-kpis .stat-card:nth-child(3){border-top-color:var(--hot)}
+.health-kpis .stat-card:nth-child(4){border-top-color:var(--violet)}
+.health-kpis .stat-card h2 { color:var(--ink);margin:0;font-size:30px; }
+.resource-line { padding:15px 0 20px;color:var(--secondary);font-variant-numeric:tabular-nums; }
+.overview-pair { display:grid;grid-template-columns:1.4fr 1fr;gap:16px; }
+.overview-pair .panel { min-width:0;margin:0; }
+.history-canvas { height:170px; }
+#activityFeed { padding:7px 0 15px;color:var(--secondary); }
+#activityFeed p { padding:6px 0;border-bottom:1px solid var(--line); }
+#activityFeed small { display:block; }
+.filters,.playback,#thresholdForm { display:flex;align-items:end;gap:10px;flex-wrap:wrap;margin:15px 0; }
+.filters label,#thresholdForm label { display:grid;gap:5px;font-size:13px; }
+.table-container { max-height:560px; }
+thead { position:sticky;top:0;background:var(--soft); }
+td,th { padding:10px 12px; }
+th { color:var(--secondary);font-weight:600; }
+.step-visual,.frame-row { display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin:12px 0; }
+.block-meter,.frame-row span { background:var(--soft);border:1px solid var(--line);padding:9px 12px;border-radius:7px; }
+.block-meter progress { display:block;width:92px;accent-color:var(--accent); }
+.disk-track { margin:14px 1%;height:6px;width:98%;border-radius:4px;background:var(--line);position:relative; }
+.disk-track i { position:absolute;width:13px;height:13px;border-radius:50%;background:var(--accent);transform:translate(-50%,-4px);transition:left .3s; }
+.incident-card { padding:14px 0;border-top:1px solid var(--line); }
+.incident-card button { margin:8px 8px 0 0; }
+#customGraph textarea { display:block;width:100%;font-family:monospace; }
+.graph-layout { margin-top:14px;display:grid;grid-template-columns:1.45fr 1fr;gap:22px;align-items:center; }
+#allocationGraph { width:100%;background:var(--soft);border-radius:12px; }
+#allocationGraph text { fill:var(--ink);font:13px "Segoe UI",sans-serif;text-anchor:middle; }
+#allocationGraph g :is(circle,rect) { fill:var(--control);stroke:var(--accent);stroke-width:2;transition:stroke .25s,fill .25s; }
+#allocationGraph .waiting circle { stroke:var(--hot); } #allocationGraph .blocked circle {stroke:#ee5d75;stroke-width:4;}
+#allocationGraph .allocated rect { stroke:var(--violet); }
+#allocationGraph .owns {fill:var(--accent);} #allocationGraph .needs {fill:var(--hot);}
+#allocationGraph .edge { fill:none;stroke-width:2; }
+#allocationGraph .edge.owns {stroke:var(--accent);}
+#allocationGraph .edge.needs {stroke:var(--hot);stroke-dasharray:6 4;animation:flow 1.2s linear infinite;}
+@keyframes flow {to{stroke-dashoffset:-20}}
+[hidden] { display:none!important; }
+@media(max-width:900px){.overview-pair,.graph-layout{grid-template-columns:1fr}.pulse-scope{width:100px}}
+@media(max-width:750px){.sidebar{height:auto}.sidebar nav{margin-top:10px}.sidebar nav a{padding:7px}.pulse-scope{display:none}.topbar{align-items:stretch}.health-kpis{grid-template-columns:repeat(2,1fr)}.main-content{padding:15px}.panel{padding:16px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+
+dialog { max-width:min(560px,90vw); margin:auto; border:1px solid var(--line); border-radius:14px; padding:24px; color:var(--ink); background:var(--surface); }
+dialog::backdrop { background:#030815ab; }
+#processInfo p { margin:9px 0; }
+.process-link { border:0; background:transparent; color:var(--accent); text-align:left; padding:0; }
+.chart-grid > .panel + .panel { margin-top:0; }
+
+#allocationGraph .running circle {stroke:#419bea;}
+#allocationGraph .finished circle {stroke:#8393aa;stroke-dasharray:3 3;}
+#allocationGraph .available rect {stroke:#37c799;}
+.timeline button.selected {box-shadow:inset 0 -3px var(--accent);}
+
+.memory-gauge { margin-bottom:14px; }
+.memory-gauge progress { width:100%;height:16px;accent-color:var(--violet);margin:9px 0; }
+.memory-gauge span { display:block;color:var(--secondary);font-size:13px; }
+
+#matrixEditor input { width:5em; }
+#customGraph details { margin:12px 0; } #customGraph summary { cursor:pointer;color:var(--accent); }

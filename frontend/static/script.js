@@ -23,7 +23,7 @@ function escapeHTML(value) {
 // MAIN DASHBOARD FUNCTION
 // ========================================
 
-async function loadDashboard() {
+async function loadDashboard(recheck=false) {
 
     const refreshButton = document.getElementById("refreshBtn");
 
@@ -33,7 +33,7 @@ async function loadDashboard() {
 
     try {
 
-        const response = await fetch("/api/dashboard");
+        const response = await fetch(recheck===true ? "/api/dashboard?recheck=1" : "/api/dashboard");
 
         if (!response.ok) {
             throw new Error("Unable to fetch dashboard information.");
@@ -42,17 +42,13 @@ async function loadDashboard() {
         const data = await response.json();
 
         // Update all dashboard sections
-        updateOverview(data);
-        updateProcessTable(data.processes.data);
-        updateHangTable(data.hang_detection.data);
+        renderHealth(data);
         updateMemory(data.memory);
         updateStorage(data.storage);
-        updateDeadlock(data.deadlock);
         updateCharts(data);
-        updateRecoveryTable(data.hang_detection.data);
         loadRecoveryHistory();
 
-        document.getElementById("sampleStatus").textContent = "Last sampled " + new Date().toLocaleTimeString() + " · Every 15 seconds";
+        document.getElementById("sampleStatus").textContent = "Last sampled " + new Date(data.health.checked*1000).toLocaleTimeString() + " · Dashboard refresh every 10s";
 
     } catch (error) {
 
@@ -69,114 +65,6 @@ async function loadDashboard() {
 
 // ========================================
 // SYSTEM OVERVIEW
-// ========================================
-
-function updateOverview(data) {
-
-    document.getElementById("totalProcesses").textContent =
-        data.processes.total;
-
-    document.getElementById("hungProcesses").textContent =
-        data.hang_detection.unresponsive_windows;
-
-    document.getElementById("ramUsage").textContent =
-        data.memory.system.usage_percent + "%";
-
-    const deadlockElement =
-        document.getElementById("deadlockStatus");
-
-    deadlockElement.textContent =
-        data.deadlock.deadlock_detected
-            ? "Detected"
-            : "Safe";
-
-    deadlockElement.className =
-        data.deadlock.deadlock_detected
-            ? "status-danger"
-            : "status-normal";
-}
-
-
-// ========================================
-// PROCESS MONITORING TABLE
-// ========================================
-
-function updateProcessTable(processes) {
-
-    const table = document.getElementById("processTable");
-
-    if (!processes || processes.length === 0) {
-
-        table.innerHTML =
-            '<tr><td colspan="5">No process information available.</td></tr>';
-
-        return;
-    }
-
-    table.innerHTML = processes.map(process => {
-
-        const statusClass =
-            process.status === "running"
-                ? "status-normal"
-                : "status-warning";
-
-        return `
-            <tr>
-                <td>${process.pid}</td>
-                <td>${escapeHTML(process.name || "Unknown")}</td>
-                <td>${process.cpu_percent}%</td>
-                <td>${process.memory_mb} MB</td>
-                <td class="${statusClass}">
-                    ${escapeHTML(process.status)}
-                </td>
-            </tr>
-        `;
-
-    }).join("");
-}
-
-
-// ========================================
-// APPLICATION HANG DETECTION
-// ========================================
-
-function updateHangTable(windows) {
-
-    const table = document.getElementById("hangTable");
-
-    if (!windows || windows.length === 0) {
-
-        table.innerHTML =
-            '<tr><td colspan="4">No application windows found.</td></tr>';
-
-        return;
-    }
-
-    table.innerHTML = windows.map(window => {
-
-        const isHung = window.status === "NOT RESPONDING";
-
-        const statusClass = isHung
-            ? "status-danger"
-            : "status-normal";
-
-        return `
-            <tr>
-                <td>${window.pid}</td>
-                <td>${escapeHTML(window.process_name)}</td>
-                <td>${escapeHTML(window.window_title)}</td>
-                <td class="${statusClass}">
-                    ${escapeHTML(window.status)}
-                </td>
-            </tr>
-        `;
-
-    }).join("");
-}
-
-
-// ========================================
-// MEMORY ANALYSIS
 // ========================================
 
 function updateMemory(memoryData) {
@@ -289,54 +177,6 @@ function updateStorage(disks) {
 // DEADLOCK DETECTION
 // ========================================
 
-function updateDeadlock(deadlock) {
-
-    const result =
-        document.getElementById("deadlockResult");
-
-    const graphContainer =
-        document.getElementById("deadlockGraph");
-
-    if (deadlock.deadlock_detected) {
-
-        result.textContent =
-            "WARNING: Circular wait detected in simulated processes.";
-
-        result.className = "status-danger";
-
-    } else {
-
-        result.textContent =
-            "No deadlock detected in the simulated scenario.";
-
-        result.className = "status-normal";
-    }
-
-    // Display the wait-for graph
-    let graphHTML = "";
-
-    for (const [process, dependencies] of
-        Object.entries(deadlock.graph)) {
-
-        graphHTML += `
-            <div class="graph-node">
-                ${escapeHTML(process)}
-                <br>
-                <span>↓</span>
-                <br>
-                ${escapeHTML(dependencies.join(", ") || "No dependency")}
-            </div>
-        `;
-    }
-
-    graphContainer.innerHTML = graphHTML;
-}
-
-
-// ========================================
-// PERFORMANCE ANALYTICS CHARTS
-// ========================================
-
 function chartColor(token) {
     return getComputedStyle(document.documentElement).getPropertyValue(token).trim();
 }
@@ -348,10 +188,11 @@ function syncChartTheme() {
     for (const [chart, fill] of [
         [cpuChart, chartColor("--chart-cpu")],
         [ramChart, [chartColor("--chart-cpu"), chartColor("--chart-free")]],
-        [diskChart, chartColor("--chart-disk")]
+        [diskChart, chartColor("--chart-disk")],
+        [Chart.getChart("healthChart"), null]
     ]) {
         if (chart) {
-            chart.data.datasets[0].backgroundColor = fill;
+            if (fill) chart.data.datasets[0].backgroundColor = fill;
             chart.options.plugins.legend.labels.color = Chart.defaults.color;
             for (const axis of Object.values(chart.options.scales)) {
                 axis.ticks.color = Chart.defaults.color;
@@ -553,66 +394,6 @@ function updateCharts(data) {
 // APPLICATION RECOVERY TABLE
 // ========================================
 
-async function updateRecoveryTable(windows) {
-
-    const tableBody = document.getElementById("recoveryTableBody");
-    const message = document.getElementById("recoveryMessage");
-
-    const eligibleApplications = windows.filter(window =>
-        window.status === "NOT RESPONDING" &&
-        window.process_name.toLowerCase() === "python.exe"
-    );
-
-    if (eligibleApplications.length === 0) {
-
-        tableBody.innerHTML = `
-            <tr>
-                <td colspan="4">
-                    No unresponsive applications detected.
-                </td>
-            </tr>
-        `;
-
-        message.textContent =
-            "No unresponsive Python test window in this sample.";
-
-        return;
-    }
-
-    tableBody.innerHTML = eligibleApplications.map(window => {
-
-        const isTestApp = window.window_title
-            .toLowerCase()
-            .includes("os hang detection - test application");
-
-        return `
-            <tr>
-                <td>${escapeHTML(window.pid)}</td>
-                <td>${escapeHTML(window.process_name)}</td>
-                <td class="status-danger">NOT RESPONDING</td>
-                <td>
-                    ${
-                        isTestApp
-                        ? `<button class="recovery-button"
-                            onclick="requestRecovery(${Number(window.pid)})">
-                            Recover
-                           </button>`
-                        : "Not eligible"
-                    }
-                </td>
-            </tr>
-        `;
-    }).join("");
-
-    message.textContent =
-        "Unresponsive applications found.";
-}
-
-
-// ========================================
-// RECOVERY HISTORY
-// ========================================
-
 async function loadRecoveryHistory() {
 
     const tableBody = document.getElementById("recoveryHistoryBody");
@@ -658,56 +439,11 @@ async function loadRecoveryHistory() {
 // REQUEST APPLICATION RECOVERY
 // ========================================
 
-async function requestRecovery(pid) {
-
-    const confirmed = window.confirm(
-        `Are you sure you want to terminate the unresponsive test application (PID: ${pid})?`
-    );
-
-    if (!confirmed) {
-        return;
-    }
-
-    try {
-
-        const response = await fetch("/api/recovery", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                pid: pid,
-                confirmed: true
-            })
-        });
-
-        const result = await response.json();
-
-        alert(result.message);
-
-        // Refresh recovery history and dashboard
-        await loadRecoveryHistory();
-        await loadDashboard();
-
-    } catch (error) {
-
-        console.error("Recovery error:", error);
-
-        alert("Unable to complete the recovery request.");
-
-    }
-}
-
-// ========================================
-// AUTOMATIC DASHBOARD REFRESH
-// ========================================
-
-// Load dashboard when the page opens
 document.addEventListener("DOMContentLoaded", function () {
 
     loadDashboard();
 
-    // Refresh every 15 seconds
-    setInterval(loadDashboard, 15000);
+    // Refresh the dashboard every ten seconds
+    setInterval(loadDashboard, 10000);
 
 });

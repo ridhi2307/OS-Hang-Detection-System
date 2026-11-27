@@ -1,9 +1,25 @@
+let pageRuns;
+const pagesPlayer=playback(document.getElementById("pagePlayer"),i=>{
+    const box=document.getElementById("pageFrames");box.replaceChildren();
+    const rows=[];
+    for(const [policy,run] of Object.entries(pageRuns)){
+        const item=run.trace[i], card=document.createElement("div");card.className="frame-row";
+        const title=document.createElement("strong");title.textContent=policy;card.append(title);
+        for(const page of item.frames){ const f=document.createElement("span");f.textContent=page;card.append(f); }
+        box.append(card);
+        rows.push([policy,item.page,item.hit?"Hit":"Fault",item.evicted??"—",run.trace.slice(0,i+1).filter(t=>!t.hit).length]);
+    }
+    makeTable(document.getElementById("labTrace"),["Policy","Request","Decision","Evicted","Faults so far"],rows);
+});
 const labForm = document.getElementById("labForm");
 labForm.addEventListener("submit", async event => {
     event.preventDefault();
     const button = labForm.querySelector("button");
     const summary = document.getElementById("labSummary");
     const trace = document.getElementById("labTrace");
+    pagesPlayer.stop();
+    document.getElementById("pagePlayer").hidden=true;
+    document.getElementById("pageFrames").replaceChildren();
     button.disabled = true;
     trace.replaceChildren();
     summary.textContent = "Comparing policies…";
@@ -15,26 +31,10 @@ labForm.addEventListener("submit", async event => {
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "Could not run the simulation.");
-        const {FIFO, LRU} = data;
-        const gap = FIFO.faults - LRU.faults;
-        const finding = gap === 0 ? "Both policies had the same number of faults." :
-            `${gap > 0 ? "LRU" : "FIFO"} avoided ${Math.abs(gap)} page fault(s) on this sequence.`;
-        summary.textContent = `FIFO · ${FIFO.faults} faults / ${FIFO.hits} hits. LRU · ${LRU.faults} faults / ${LRU.hits} hits. ${finding}`;
-        const table = document.createElement("table");
-        table.innerHTML = "<thead><tr><th>Step</th><th>Request</th><th>FIFO frames</th><th>FIFO decision</th><th>LRU frames</th><th>LRU decision</th></tr></thead>";
-        const body = table.createTBody();
-        FIFO.trace.forEach((step, i) => {
-            const row = body.insertRow();
-            row.insertCell().textContent = i + 1;
-            row.insertCell().textContent = step.page;
-            for (const item of [step, LRU.trace[i]]) {
-                row.insertCell().textContent = item.frames.join(" · ");
-                const decision = row.insertCell();
-                decision.textContent = item.hit ? "Hit" : item.evicted === null ? "Fault · free frame" : `Fault · evict ${item.evicted}`;
-                decision.className = item.hit ? "status-normal" : "status-warning";
-            }
-        });
-        trace.append(table);
+        pageRuns=data;
+        summary.textContent=Object.entries(data).map(([k,r])=>k+" · "+r.hits+" hits / "+r.faults+" faults").join("   |   ");
+        document.getElementById("pagePlayer").hidden=false;
+        pagesPlayer.load(data.FIFO.trace.length);
     } catch (error) {
         summary.textContent = error.message;
     } finally {

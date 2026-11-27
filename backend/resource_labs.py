@@ -20,10 +20,13 @@ def cpu(data):
     arrivals = numbers(data.get("arrivals"), "Arrivals", 0, 99, 12)
     bursts = numbers(data.get("bursts"), "Bursts", 1, 30, 12)
     quantum, = numbers(data.get("quantum"), "Quantum", 1, 30, 1)
+    priorities = numbers(data.get("priorities", " ".join("1" for _ in bursts)), "Priorities", 0, 99, 12)
+    if len(priorities) != len(bursts):
+        raise ValueError("Enter one priority per process (lower runs first).")
     if len(arrivals) != len(bursts):
         raise ValueError("Enter one arrival time for each CPU burst.")
     runs = []
-    for policy in ("FCFS", "Shortest job first", "Round robin"):
+    for policy in ("FCFS", "Shortest job first", "Round robin", "SRTF", "Priority"):
         pending = deque(sorted(range(len(bursts)), key=lambda i: (arrivals[i], i)))
         ready = []
         remaining = bursts.copy()
@@ -40,11 +43,17 @@ def cpu(data):
                 ready.append(pending.popleft())
             if policy == "Shortest job first":
                 ready.sort(key=lambda i: (bursts[i], arrivals[i], i))
+            if policy == "SRTF":
+                ready.sort(key=lambda i: (remaining[i], arrivals[i], i))
+            if policy == "Priority":
+                ready.sort(key=lambda i: (priorities[i], arrivals[i], i))
             i = ready.pop(0)
             first.setdefault(i, now)
             duration = min(quantum, remaining[i]) if policy == "Round robin" else remaining[i]
+            if policy == "SRTF" and pending:
+                duration = min(duration, arrivals[pending[0]]-now)
             remaining[i] -= duration
-            trace.append([now, now + duration, f"P{i+1}", "Completed" if not remaining[i] else "Quantum expired"])
+            trace.append([now, now + duration, f"P{i+1}", "Completed" if not remaining[i] else ("Re-evaluate arrivals" if policy == "SRTF" else "Quantum expired")])
             now += duration
             while pending and arrivals[pending[0]] <= now:
                 ready.append(pending.popleft())
@@ -56,7 +65,9 @@ def cpu(data):
         turnaround = sum(finish[i] - arrivals[i] for i in finish)
         metrics = [round((turnaround-sum(bursts))/count, 2), round(turnaround/count, 2),
                    round(sum(first[i]-arrivals[i] for i in first)/count, 2)]
-        runs.append(dict(name=policy, metrics=metrics, steps=trace))
+        jobs = [[f"P{i+1}", arrivals[i], bursts[i], priorities[i], finish[i],
+                 finish[i]-arrivals[i]-bursts[i], finish[i]-arrivals[i], first[i]-arrivals[i]] for i in range(count)]
+        runs.append(dict(name=policy, metrics=metrics, steps=trace, jobs=jobs))
     return dict(metrics=["Mean wait (ticks)", "Mean turnaround (ticks)", "Mean response (ticks)"],
                 columns=["Start", "End", "Process", "Decision"], runs=runs)
 
@@ -65,8 +76,21 @@ def disk(data):
     requests = numbers(data.get("requests"), "Cylinders", 0, 199)
     head, = numbers(data.get("head"), "Starting cylinder", 0, 199, 1)
     runs = []
-    for policy in ("FCFS", "Shortest seek first", "LOOK (up first)"):
+    for policy in ("FCFS", "Shortest seek first", "LOOK (up first)", "SCAN", "C-SCAN", "C-LOOK"):
         queue = requests.copy()
+        extra = {}
+        if policy in ("SCAN","C-SCAN","C-LOOK"):
+            upper = sorted(x for x in queue if x >= head)
+            lower = sorted(x for x in queue if x < head)
+            queue = upper.copy()
+            if lower:
+                if policy in ("SCAN","C-SCAN") and (upper or [head])[-1] != 199:
+                    extra[len(queue)] = "Upper boundary"
+                    queue.append(199)
+                if policy == "C-SCAN" and lower[0] != 0:
+                    extra[len(queue)] = "Wrap to start"
+                    queue.append(0)
+                queue.extend(reversed(lower) if policy == "SCAN" else lower)
         if policy.startswith("LOOK"):
             queue = sorted(x for x in queue if x >= head) + sorted((x for x in queue if x < head), reverse=True)
         pos = head
@@ -77,11 +101,11 @@ def disk(data):
             target = queue.pop(index)
             distance = abs(target-pos)
             total += distance
-            steps.append([pos, target, distance, total])
+            steps.append([pos, target, distance, total, extra.get(len(steps),"Service request")])
             pos = target
         runs.append(dict(name=policy, metrics=[total, round(total/len(requests), 2)], steps=steps))
     return dict(metrics=["Total travel (cylinders)", "Mean travel / request"],
-                columns=["From", "To", "Distance", "Cumulative travel"], runs=runs)
+                columns=["From", "To", "Distance", "Cumulative travel", "Action"], runs=runs)
 
 
 def allocation(data):
@@ -112,8 +136,8 @@ def allocation(data):
 
 LABS = {
     "cpu": dict(title="CPU scheduling", description="Compare how a single CPU handles arriving jobs. Waiting measures time in the ready queue. Response measures time until the first dispatch.",
-                fields=[("arrivals", "Arrival times"), ("bursts", "CPU bursts"), ("quantum", "Round-robin quantum")],
-                presets={"Long job first": ["0 1 2 3", "8 4 2 1", "2"], "Idle intervals": ["2 9 10", "3 2 1", "1"]}, simulate=cpu),
+                fields=[("arrivals", "Arrival times"), ("bursts", "CPU bursts"), ("quantum", "Round-robin quantum"), ("priorities","Priorities · lower first")],
+                presets={"Long job first": ["0 1 2 3", "8 4 2 1", "2", "2 1 3 1"], "Idle intervals": ["2 9 10", "3 2 1", "1", "1 2 1"]}, simulate=cpu),
     "disk": dict(title="Disk scheduling", description="Service a queue on a simulated disk with cylinders 0–199. LOOK starts toward higher cylinders and reverses at the last pending request in that direction.",
                  fields=[("requests", "Cylinder queue"), ("head", "Starting cylinder")],
                  presets={"Mixed requests": ["98 183 37 122 14 124 65 67", "53"], "Repeated cylinders": ["40 40 10 90 50", "40"]}, simulate=disk),

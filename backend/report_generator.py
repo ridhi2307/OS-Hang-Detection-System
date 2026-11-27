@@ -37,6 +37,15 @@ REPORT_DIR = os.path.join(
 # CSV REPORT GENERATION
 # --------------------------------------------------
 
+def recent_health_events():
+    from contextlib import closing
+    with closing(get_connection()) as db:
+        return db.execute("""
+            SELECT datetime(at,'unixepoch','localtime'),name,pid,event,detail
+            FROM health_events ORDER BY id DESC LIMIT 50
+        """).fetchall()
+
+
 def generate_csv_report():
 
     os.makedirs(REPORT_DIR, exist_ok=True)
@@ -47,7 +56,7 @@ def generate_csv_report():
     deadlock_count = get_deadlock_statistics()
     recovery_stats = get_recovery_statistics()
 
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
 
     filename = f"system_report_{timestamp}.csv"
     file_path = os.path.join(REPORT_DIR, filename)
@@ -69,13 +78,15 @@ def generate_csv_report():
         ["Maximum RAM Usage (%)", memory_stats["maximum_usage"]],
         [],
         ["DEADLOCK STATISTICS", ""],
-        ["Detected Deadlocks", deadlock_count],
+        ["Simulated deadlock observations", deadlock_count],
         [],
         ["RECOVERY STATISTICS", ""],
         ["Total Recovery Attempts", recovery_stats["total_attempts"]],
         ["Successful Recoveries", recovery_stats["successful_recoveries"]]
     ]
 
+    report_data.extend([[], ["RECENT INCIDENT ACTIVITY"], ["Local time","Application","PID","Event","Detail"]])
+    report_data.extend(recent_health_events())
     with open(file_path, "w", newline="", encoding="utf-8-sig") as file:
         writer = csv.writer(file)
         writer.writerows(report_data)
@@ -162,7 +173,7 @@ def generate_recommendations(
             "Unresponsive Applications",
             "Save your work regularly and close unnecessary "
             "applications. Use controlled recovery for the "
-            "OS Guardian test application."
+            "OS Hang Detection System test application."
         ])
 
     # Deadlock recommendations
@@ -215,7 +226,7 @@ def generate_pdf_report():
     # Get detailed system information
     details = get_detailed_report_data()
 
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
 
     filename = f"system_report_{timestamp}.pdf"
     file_path = os.path.join(REPORT_DIR, filename)
@@ -303,7 +314,7 @@ def generate_pdf_report():
     # --------------------------------------------------
 
     elements.append(
-        Paragraph("OS GUARDIAN", styles["Title"])
+        Paragraph("OS HANG DETECTION SYSTEM", styles["Title"])
     )
 
     elements.append(
@@ -325,19 +336,29 @@ def generate_pdf_report():
     elements.append(Spacer(1, 20))
 
     # --------------------------------------------------
+    # Recent incident evidence precedes the resource appendix.
+    from xml.sax.saxutils import escape
+    activity = [["Local time", "Application / PID", "Event", "Evidence"]]
+    for at,name,pid,event,detail in recent_health_events():
+        cells = [at, f"{name} / {pid}", event, detail]
+        activity.append([Paragraph(escape(str(value)), styles["BodyText"]) for value in cells])
+    if len(activity) == 1:
+        activity.append(["—","—","No incidents","No confirmed events recorded."])
+    add_section("Recent application incidents", activity, [95,105,90,180])
+
     # 1. PROJECT INTRODUCTION
     # --------------------------------------------------
 
     elements.append(
         Paragraph(
-            "ABOUT OS GUARDIAN",
+            "ABOUT OS HANG DETECTION SYSTEM",
             styles["Heading1"]
         )
     )
 
     elements.append(
         Paragraph(
-            "OS Guardian is an OS-level application monitoring and "
+            "OS Hang Detection System is an OS-level application monitoring and "
             "recovery system designed to monitor system resources, "
             "identify unresponsive applications, demonstrate "
             "deadlock detection and maintain recovery records.",
@@ -388,7 +409,7 @@ def generate_pdf_report():
     ]
 
     add_section(
-        "OS GUARDIAN MODULE EXPLANATIONS",
+        "OS HANG DETECTION SYSTEM MODULE EXPLANATIONS",
         module_data,
         [125, 320]
     )
@@ -438,7 +459,7 @@ def generate_pdf_report():
 
         [
             "Deadlock",
-            "Detected Deadlocks",
+            "Simulated deadlock observations",
             deadlock_count
         ],
 
@@ -622,7 +643,7 @@ def generate_pdf_report():
         ["Metric", "Result"],
 
         [
-            "Detected Deadlocks",
+            "Simulated deadlock observations",
             str(deadlock_count)
         ],
 
@@ -711,7 +732,7 @@ def generate_pdf_report():
 
     elements.append(
         Paragraph(
-            "OS Guardian provides process monitoring, application "
+            "OS Hang Detection System provides process monitoring, application "
             "hang detection, memory and storage analysis, simulated "
             "deadlock detection and controlled recovery. The "
             "recommendations in this report can help users improve "
@@ -724,7 +745,7 @@ def generate_pdf_report():
 
     elements.append(
         Paragraph(
-            "Report generated by OS Guardian Monitoring System.",
+            "Report generated by OS Hang Detection System.",
             styles["Italic"]
         )
     )
