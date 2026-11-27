@@ -37,7 +37,7 @@ bash run.sh allocation --holes "100 500 200 300 600" --requests "212 417 112 426
 
 1. Open **Overview**. The cards show a sample of up to 25 processes, the number of unresponsive windows, RAM utilization and the result of a simulated wait-for graph. Live charts update every 15 seconds. Use the sidebar to inspect individual processes, memory consumers and disk partitions.
 2. Open **Page replacement** and run the default sequence with three frames. FIFO produces 10 faults and 3 hits. LRU produces 9 faults and 4 hits. Compare the frame contents and eviction decisions, then change the number of frames and run again.
-3. Open **Deadlock detection** to follow the circular wait among three simulated processes.
+3. Open **Deadlock detection → Start workers**. The print and archive jobs run as two local Python processes. Match their PIDs in Task Manager’s Details view. Choose **Request second locks** and inspect the reciprocal waits. Choose **Roll back archive job** to let the print job finish. Each worker enforces a 60-second deadline if you leave the page. The printer and spool file in the example are private synchronization locks. Below the live demo, a separate worked example shows a three-process cycle.
 4. To demonstrate recovery, start `python tests/test_hang.py` in another activated terminal. Click **Simulate application hang** in that test window. Refresh **Window health**, then open **Recovery** to confirm termination of the test application. The test window resumes after 45 seconds if left alone. Recovery attempts appear in the history.
 5. Export a CSV or PDF monitoring report from the dashboard. The paging experiment is displayed separately in the lab.
 

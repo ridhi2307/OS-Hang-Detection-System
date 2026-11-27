@@ -293,13 +293,14 @@
         <!-- DEADLOCK DETECTION -->
         <section id="deadlock" class="dashboard-section">
 
-            <h2 class="section-title">Deadlock Detection</h2>
+            <h2 class="section-title">Deadlock detection</h2>
+            {% include 'live_deadlock.html' %}
 
             <div class="panel">
 
                 <div class="panel-heading">
-                    <h3>Wait-For Graph</h3>
-                    <span>Simulated resource allocation scenario</span>
+                    <h3>Worked example · Three-process wait-for graph</h3>
+                    <span>P1 holds R1 and requests R2. P2 holds R2 and requests R3. P3 holds R3 and requests R1.</span>
                 </div>
 
                 <div id="deadlockResult">
@@ -420,5 +421,6 @@
     <script src="{{ url_for('static', filename='workspace.js') }}"></script>
     <script src="{{ url_for('static', filename='lab.js') }}"></script>
     <script src="{{ url_for('static', filename='resource_labs.js') }}"></script>
+    <script src="{{ url_for('static', filename='live_deadlock.js') }}"></script>
 </body>
 </html>

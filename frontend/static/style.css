@@ -485,3 +485,10 @@ input { width:100%; color:var(--ink); padding:10px; border:1px solid #9ab5ac; bo
 .timeline button { flex-basis:0; min-width:46px; }
 .timeline button.selected { background:var(--teal); color:white; }
 @media(max-width:750px) { .sidebar nav a { flex:none; } }
+.live-demo { margin-bottom:18px; }
+.live-demo h3,.live-demo .table-container { margin:0 0 12px; }
+.live-demo .table-container:not(:empty) { margin-top:16px; }
+.demo-controls { display:flex; gap:10px; flex-wrap:wrap; margin:18px 0; }
+.demo-controls button { border:1px solid var(--line); border-radius:8px; padding:10px 14px; background:var(--control); color:var(--ink); cursor:pointer; }
+.demo-controls button:enabled { color:white; background:var(--teal); }
+#demoStatus { font-weight:600; }
