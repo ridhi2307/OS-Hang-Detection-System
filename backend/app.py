@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, render_template, request, send_file
+from backend.resource_labs import LABS
 from backend.paging import compare_pages
 from backend.process_monitor import get_running_processes
 from backend.hang_detector import get_application_windows
@@ -208,11 +209,24 @@ def save_deadlock_record(result):
 @app.route("/")
 def home():
 
-    return render_template("index.html")
+    return render_template("index.html", labs=LABS)
 
 # -----------------------------------------
 # PROCESS MONITORING API
 # -----------------------------------------
+
+@app.post("/api/lab/<name>")
+def resource_lab_api(name):
+    if name not in LABS:
+        return jsonify(error="Unknown simulation."), 404
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify(error="Submit a simulation workload."), 400
+    try:
+        return jsonify(LABS[name]["simulate"](data))
+    except ValueError as error:
+        return jsonify(error=str(error)), 400
+
 
 @app.post("/api/lab/paging")
 def paging_api():
