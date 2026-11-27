@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==========================================
-# OS GUARDIAN
+# OS HANG DETECTION SYSTEM
 # Integrated Python and Bash Application
 # ==========================================
 
@@ -20,7 +20,7 @@ if [[ ${1:-} == "lab" ]]; then
 fi
 
 echo "=========================================="
-echo "          OS GUARDIAN"
+echo "          OS HANG DETECTION SYSTEM"
 echo "     SYSTEM RESOURCE MONITOR"
 echo "=========================================="
 
@@ -81,11 +81,11 @@ echo ""
 echo "=========================================="
 echo "   SYSTEM INFORMATION COLLECTION DONE"
 echo "=========================================="
-# 6. Launch OS Guardian
+# 6. Launch OS Hang Detection System
 
 echo ""
 echo "=========================================="
-echo "       STARTING OS GUARDIAN"
+echo "       STARTING OS HANG DETECTION SYSTEM"
 echo "=========================================="
 
 exec python run_project.py

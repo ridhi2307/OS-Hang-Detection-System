@@ -1,20 +1,4 @@
-
-import sqlite3
-import os
-
-
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-DATABASE_PATH = os.path.join(
-    BASE_DIR,
-    "database",
-    "os_monitor.db"
-)
-
-
-def get_database_connection():
-
-    return sqlite3.connect(DATABASE_PATH)
+from backend.database import get_connection as get_database_connection
 
 
 def get_process_statistics():
@@ -48,8 +32,7 @@ def get_hang_statistics():
 
     cursor.execute("""
         SELECT COUNT(*)
-        FROM hang_records
-        WHERE status = 'NOT RESPONDING'
+        FROM incidents
     """)
 
     result = cursor.fetchone()[0]
@@ -107,8 +90,7 @@ def get_recovery_statistics():
 
     cursor.execute("""
         SELECT COUNT(*)
-        FROM recovery_records
-        WHERE UPPER(result) LIKE '%SUCCESS%'
+        FROM health_events WHERE event = 'Restart verified'
     """)
 
     successful_recoveries = cursor.fetchone()[0]

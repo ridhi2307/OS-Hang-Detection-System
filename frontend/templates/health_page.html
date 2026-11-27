@@ -1,0 +1,7 @@
+<section id="health" class="dashboard-section"><h2 class="section-title">Application health</h2>
+<div class="panel"><div class="result-heading"><div><h3>Monitored applications</h3><small>One entry per process with a visible, titled Windows window.</small></div>
+<label>Status <select id="appFilter">{% for value in ['All','Healthy','Checking','Unresponsive','Recovering','Failed','Unknown'] %}<option>{{ value }}</option>{% endfor %}</select></label></div>
+<div id="applicationRows" class="table-container"></div></div>
+<div class="panel"><h3>Detection settings</h3><p>Windows checks the UI message loop. Confirm a hang when repeated samples stay unresponsive for the selected interval. An inconclusive message probe appears as Unknown.</p>
+<form id="thresholdForm"><label>Confirmation interval (seconds) <input type="number" min="2" max="60" required id="thresholdInput"></label> <button>Save interval</button></form>
+<output id="thresholdResult"></output></div><div class="panel"><h3>Hang detection history</h3><div class="table-container" id="incidentHistory"></div></div></section>

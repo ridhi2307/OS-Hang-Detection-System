@@ -20,13 +20,35 @@ for (const lab of document.querySelectorAll(".resource-lab")) {
     const form = find("form");
     const policy = find(".policy");
     let result, inputs, step;
-    function showStep() {
+    const player = playback(find(".playback"), showStep);
+    function showStep(index) {
+        step = index;
         const run = result.runs[policy.selectedIndex];
         const values = run.steps[step];
-        const output = find("output");
-        output.textContent = `Step ${step + 1} of ${run.steps.length}`;
-        find(".back").disabled = step === 0;
-        find(".next").disabled = step === run.steps.length - 1;
+        const visual = find(".step-visual");
+        visual.replaceChildren();
+        if (lab.id === "disk") {
+            const caption = document.createElement("p");
+            caption.textContent = "Head at cylinder "+values[1]+" · "+ run.steps.slice(0,step+1).map(s=>s[1]).join(" → ");
+            const track = document.createElement("div"); track.className="disk-track";
+            const head = document.createElement("i"); head.style.left=(values[1]/199*100)+"%";
+            if (!matchMedia("(prefers-reduced-motion: reduce)").matches)
+                head.animate([{left:(values[0]/199*100)+"%"},{left:head.style.left}],{duration:260});
+            track.append(head); visual.append(track,caption);
+        }
+        if (lab.id === "allocation") {
+            const blocks = inputs.holes.trim().split(/[\s,]+/).map(Number);
+            const free = values[2].split(" · ").map(Number);
+            free.forEach((n,i)=>{
+                const block=document.createElement("div"); block.className="block-meter";
+                const bar=document.createElement("progress"); bar.max=blocks[i]; bar.value=blocks[i]-n;
+                const placed=run.steps.slice(0,step+1).flatMap((s,j)=>s[1]==="Placed in B"+(i+1) ? ["P"+(j+1)+" ("+s[0]+")"] : []);
+                block.append("B"+(i+1)+" · "+n+" free",bar,placed.join(" · ") || "Empty"); visual.append(block);
+            });
+            const info=document.createElement("p");
+            info.textContent="Split-block model · internal fragmentation 0 units · free outside largest hole "+(values[3]-Math.max(...free))+" units.";
+            visual.append(info);
+        }
         makeTable(find(".trace"), result.columns, [values]);
         Array.from(find(".timeline").children).forEach((item, i) => item.classList.toggle("selected", i === step));
     }
@@ -43,17 +65,20 @@ for (const lab of document.querySelectorAll(".resource-lab")) {
                 segment.title = `${job} · ticks ${start}–${end}`;
                 segment.setAttribute("aria-label", segment.title);
                 segment.style.flexGrow = end - start;
-                segment.onclick = () => { step = i; showStep(); };
+                segment.onclick = () => player.load(result.runs[policy.selectedIndex].steps.length,i);
                 timeline.append(segment);
             });
         }
-        showStep();
+        const run = result.runs[policy.selectedIndex];
+        if (run.jobs) makeTable(find(".job-details"),["Process","Arrival","Burst","Priority","Completion","Wait","Turnaround","Response"],run.jobs);
+        player.load(run.steps.length);
     }
     form.querySelector(".preset").onchange = event => {
         const values = JSON.parse(event.target.value);
         form.querySelectorAll("input").forEach((input, i) => { input.value = values[i]; });
     };
     form.oninput = form.onchange = () => {
+        player.stop();
         find(".lab-results").hidden = true;
         find(".feedback").textContent = "Run the comparison to analyze this workload.";
     };
@@ -86,8 +111,6 @@ for (const lab of document.querySelectorAll(".resource-lab")) {
         }
     };
     policy.onchange = showPolicy;
-    find(".back").onclick = () => { step--; showStep(); };
-    find(".next").onclick = () => { step++; showStep(); };
     find(".export").onclick = () => {
         const rows = [["Workload", lab.id], ...Object.entries(inputs), [], ["Policy", ...result.metrics],
             ...result.runs.map(run => [run.name, ...run.metrics]), [], ["Policy", "Step", ...result.columns]];

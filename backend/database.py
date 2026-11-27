@@ -102,6 +102,21 @@ def create_tables():
         )
     """)
 
+    connection.executescript("""
+        CREATE TABLE IF NOT EXISTS incidents (
+            id INTEGER PRIMARY KEY, pid INTEGER, born REAL, name TEXT, title TEXT,
+            started REAL, closed REAL, status TEXT);
+        CREATE UNIQUE INDEX IF NOT EXISTS open_incident ON incidents(pid,born) WHERE closed IS NULL;
+        CREATE TABLE IF NOT EXISTS health_events (
+            id INTEGER PRIMARY KEY, incident INTEGER, name TEXT, pid INTEGER, event TEXT, detail TEXT, at REAL);
+        CREATE INDEX IF NOT EXISTS health_events_at ON health_events(at);
+        CREATE TABLE IF NOT EXISTS health_samples (at REAL, total INTEGER, healthy INTEGER, hung INTEGER);
+        CREATE INDEX IF NOT EXISTS health_sample_time ON health_samples(at);
+        CREATE TABLE IF NOT EXISTS detection_settings (id INTEGER PRIMARY KEY, seconds INTEGER);
+        INSERT OR IGNORE INTO detection_settings VALUES(1,6);
+    """)
+    if "hwnd" not in {row[1] for row in cursor.execute("PRAGMA table_info(incidents)")}:
+        cursor.execute("ALTER TABLE incidents ADD COLUMN hwnd INTEGER")
     connection.commit()
 
     connection.close()

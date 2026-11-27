@@ -1,10 +1,10 @@
 (() => {
     const key = "os-guardian.theme";
     const preference = matchMedia("(prefers-color-scheme: dark)");
-    let choice = "system";
+    let choice = "dark";
     try {
         const stored = localStorage.getItem(key);
-        if (stored === "dark" || stored === "light") choice = stored;
+        if (stored === "dark" || stored === "light" || stored === "system") choice = stored;
     } catch { /* Preferences can still change for this visit. */ }
 
     function apply() {

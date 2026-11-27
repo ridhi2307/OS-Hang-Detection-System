@@ -1,0 +1,11 @@
+<div class="panel" id="graphLab"><div class="result-heading"><div><h3>Resource allocation simulator</h3><small>Educational model · interchangeable resource instances</small></div><label>Scenario <select id="graphScenario">{% for name in scenarios %}<option>{{ name }}</option>{% endfor %}<option>Custom scenario</option></select></label></div>
+<div id="customGraph" hidden>
+<div class="filters"><label>Processes <input type="number" min="1" max="8" id="graphProcesses"></label><label>Resource types <input type="number" min="1" max="6" id="graphResources"></label></div>
+<div id="matrixEditor" class="table-container"></div>
+<small>Capacity is the total number of instances. Held units are already allocated. Requested units are additional units needed before a process can finish.</small>
+<details><summary>Edit scenario JSON</summary><textarea aria-label="Custom scenario JSON" id="graphJson" rows="5"></textarea><button type="button" id="applyGraphJson">Load into editor</button></details>
+</div>
+<button id="graphStart">Start simulation</button><span class="graph-error" role="status"></span>
+<div id="graphOutput" hidden><div class="graph-layout"><svg id="allocationGraph" aria-label="Resource allocation and request graph" role="img"></svg><div><p class="eyebrow">Current step</p><h3 id="graphText"></h3><p id="graphWhy"></p><small>Solid cyan · resource to owner<br>Dashed orange · process request<br>Red · deadlocked holder</small></div></div>
+<div class="playback"></div><div class="graph-recover"><label>Simulated victim <select id="graphVictim"></select></label> <button id="graphRecover">Release victim’s resources</button></div></div>
+<script type="application/json" id="scenarioData">{{ scenarios | tojson }}</script></div>

@@ -6,13 +6,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>OS Guardian | Resource monitor</title>
+    <title>OS Hang Detection System</title>
 
     <link rel="icon" href="data:,">
 
     <script src="{{ url_for('static', filename='theme.js') }}"></script>
     <link rel="stylesheet"
           href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static',filename='console.css') }}">
 </head>
 
 <body>
@@ -20,15 +21,16 @@
     <!-- SIDEBAR -->
     <aside class="sidebar">
 
-        <div class="logo"><span class="brand-sign" aria-hidden="true">G</span><div><h2>OS Guardian</h2><p>Resource monitor</p></div></div>
+        <div class="logo"><span class="brand-sign" aria-hidden="true">∿</span><div><h2>OS Hang<br>Detection System</h2><p>Windows monitor</p></div></div>
         <nav aria-label="Workspace">
             <a href="#overview">Overview</a>
+            <a href="#health">Application health</a>
             <a href="#processes">Processes</a>
             <a href="#hangs">Window health</a>
             <a href="#memory">Memory</a>
             <a href="#storage">Storage</a>
             <a href="#recovery">Recovery</a>
-            <span class="nav-label">Simulations</span>
+            <span class="nav-label">Simulation labs</span>
             {% for key, spec in labs.items() %}
             <a href="#{{ key }}">{{ spec.title }}</a>
             {% endfor %}
@@ -46,7 +48,7 @@
         <header class="topbar">
 
             <div>
-                <h1 id="pageTitle">System overview</h1>
+                <h1 id="pageTitle">Application overview</h1>
                 <p id="sampleStatus" role="status">Collecting first sample…</p>
             </div>
             <div class="tools">
@@ -65,37 +67,7 @@
         <!-- OVERVIEW -->
         <section id="overview">
 
-            <div class="feature-panel"><div><h2>CPU scheduling lab</h2><p>Run the same jobs under three schedulers and inspect who waits, who runs, and for how long.</p><a href="#cpu">Open simulation &rarr;</a></div>
-            <div class="frame-art" aria-hidden="true"><i>P1</i><i>P2</i><i>P3</i><i>P1</i></div></div>
-
-            <div class="stats-grid">
-
-                <div class="stat-card">
-                    <p>Sampled processes</p>
-                    <h2 id="totalProcesses">--</h2>
-                    <span>Up to 25 processes by CPU</span>
-                </div>
-
-                <div class="stat-card">
-                    <p>Unresponsive Windows</p>
-                    <h2 id="hungProcesses">--</h2>
-                    <span>Application hang detection</span>
-                </div>
-
-                <div class="stat-card">
-                    <p>RAM Usage</p>
-                    <h2 id="ramUsage">--</h2>
-                    <span>System memory utilization</span>
-                </div>
-
-                <div class="stat-card">
-                    <p>Wait-for graph</p>
-                    <h2 id="deadlockStatus">--</h2>
-                    <span>Simulated deadlock scenario</span>
-                </div>
-
-            </div>
-
+{% include 'health_overview.html' %}
         </section>
 
 <!-- PERFORMANCE CHARTS -->
@@ -140,40 +112,11 @@
 
             <h2 class="section-title">Process Monitoring</h2>
 
-            <div class="panel">
-
-                <div class="panel-heading">
-                    <h3>Top System Processes</h3>
-                    <span>CPU and memory utilization</span>
-                </div>
-
-                <div class="table-container">
-
-                    <table>
-
-                        <thead>
-                            <tr>
-                                <th>PID</th>
-                                <th>Process Name</th>
-                                <th>CPU (%)</th>
-                                <th>Memory (MB)</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-
-                        <tbody id="processTable">
-                            <tr>
-                                <td colspan="5">Loading process information...</td>
-                            </tr>
-                        </tbody>
-
-                    </table>
-
-                </div>
-
-            </div>
-
-        </section>
+<div class="panel"><div class="result-heading"><h3>Process explorer</h3><small>Accessible processes · CPU is measured per logical core</small></div>
+<div class="filters"><label>Search name or PID <input id="processSearch" type="search"></label>
+<label>Scope <select id="processScope"><option value="all">All processes</option><option value="apps">Visible applications</option></select></label>
+<label>Sort by <select id="processSort"><option value="cpu_percent">CPU usage</option><option value="memory_mb">Memory</option><option value="name">Name</option><option value="started">Newest</option></select></label></div>
+<div class="table-container" id="processRows"></div><dialog id="processDetails"><div class="result-heading"><h3>Process details</h3><button autofocus onclick="this.closest('dialog').close()">Close</button></div><div id="processInfo"></div></dialog></div></section>
 
 
         <!-- HANG DETECTION -->
@@ -181,39 +124,7 @@
 
             <h2 class="section-title">Application Hang Detection</h2>
 
-            <div class="panel">
-
-                <div class="panel-heading">
-                    <h3>Application Window Status</h3>
-                    <span>Windows responsiveness monitoring</span>
-                </div>
-
-                <div class="table-container">
-
-                    <table>
-
-                        <thead>
-                            <tr>
-                                <th>PID</th>
-                                <th>Application</th>
-                                <th>Window Title</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-
-                        <tbody id="hangTable">
-                            <tr>
-                                <td colspan="4">Loading application information...</td>
-                            </tr>
-                        </tbody>
-
-                    </table>
-
-                </div>
-
-            </div>
-
-        </section>
+<div class="panel"><h3>Visible Windows application windows</h3><p>Windows hang status and a bounded message probe are sampled per window. A missing reply can also indicate access restrictions.</p><div class="table-container" id="windowRows"></div></div></section>
 
 
         <!-- MEMORY ANALYSIS -->
@@ -221,6 +132,7 @@
 
             <h2 class="section-title">Memory Analysis</h2>
 
+            <div class="panel memory-gauge"><h3>Physical memory</h3><progress id="memoryGauge" max="100" value="0"></progress><span id="memoryGaugeCaption"></span></div>
             <div class="stats-grid">
 
                 <div class="stat-card">
@@ -294,25 +206,10 @@
         <section id="deadlock" class="dashboard-section">
 
             <h2 class="section-title">Deadlock detection</h2>
+            {% include 'graph.html' %}
             {% include 'live_deadlock.html' %}
 
-            <div class="panel">
-
-                <div class="panel-heading">
-                    <h3>Worked example · Three-process wait-for graph</h3>
-                    <span>P1 holds R1 and requests R2. P2 holds R2 and requests R3. P3 holds R3 and requests R1.</span>
-                </div>
-
-                <div id="deadlockResult">
-                    Loading deadlock analysis...
-                </div>
-
-                <div id="deadlockGraph" class="graph-container">
-                </div>
-
-            </div>
-
-        </section>
+</section>
 
 <!-- APPLICATION RECOVERY SECTION -->
 
@@ -320,51 +217,8 @@
 
     <h2 class="section-title">Application Recovery</h2>
 
-    <div class="panel">
-
-        <div class="panel-heading">
-            <h3>Unresponsive Test Applications</h3>
-            <span>Controlled application recovery</span>
-        </div>
-
-        <p class="recovery-description">
-            Applications detected as NOT RESPONDING will appear here.
-            You can request recovery only for controlled test applications.
-        </p>
-
-        <div id="recoveryMessage" class="recovery-message">
-            Checking for unresponsive test applications...
-        </div>
-
-        <div class="table-container">
-
-            <table>
-
-                <thead>
-                    <tr>
-                        <th>PID</th>
-                        <th>Application</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-
-                <tbody id="recoveryTableBody">
-
-                    <tr>
-                        <td colspan="4">
-                            No recovery information available.
-                        </td>
-                    </tr>
-
-                </tbody>
-
-            </table>
-
-        </div>
-
-    </div>
-
+<div class="panel"><div class="result-heading"><h3>Active incidents</h3><button onclick="loadDashboard(true)">Retry detection</button></div><div id="recoveryIncidents"></div><output id="actionResult"></output></div>
+<div class="panel"><h3>Incident and recovery log</h3><div id="recoveryLog" class="table-container"></div></div>
     <div class="panel recovery-history-panel">
 
         <div class="panel-heading">
@@ -403,6 +257,7 @@
 
 
 
+        {% include 'health_page.html' %}
         {% include 'lab.html' %}
         {% include 'resource_labs.html' %}
         <!-- FOOTER -->
@@ -419,8 +274,12 @@
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 
     <script src="{{ url_for('static', filename='workspace.js') }}"></script>
+    <script src="{{ url_for('static', filename='playback.js') }}"></script>
     <script src="{{ url_for('static', filename='lab.js') }}"></script>
     <script src="{{ url_for('static', filename='resource_labs.js') }}"></script>
     <script src="{{ url_for('static', filename='live_deadlock.js') }}"></script>
+<script src="{{ url_for('static', filename='health.js') }}"></script>
+<script src="{{ url_for('static', filename='graph.js') }}"></script>
+<script src="{{ url_for('static',filename='icons.js') }}"></script>
 </body>
 </html>

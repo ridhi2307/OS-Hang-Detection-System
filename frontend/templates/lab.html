@@ -1,13 +1,13 @@
 <section id="lab" class="dashboard-section">
     <h2 class="section-title">Page replacement lab</h2>
     <div class="panel">
-        <p>When memory fills, FIFO evicts the page loaded first. LRU evicts the page used least recently. Run the same requests through both policies to compare their decisions.</p>
+        <p>When memory fills, FIFO evicts the page loaded first. LRU evicts the page used least recently. Optimal evicts the page whose next use is farthest away. Run the same requests through both policies to compare their decisions.</p>
         <form id="labForm">
             <label>Page requests<input name="pages" maxlength="512" required value="7 0 1 2 0 3 0 4 2 3 0 3 2"></label>
             <label>Memory frames<input name="frames" type="number" min="1" max="8" required value="3"></label>
             <button>Compare policies</button>
         </form>
         <p id="labSummary" role="status"></p>
-        <div id="labTrace" class="table-container"></div>
+        <div class="playback" id="pagePlayer" hidden></div><div id="pageFrames"></div><div id="labTrace" class="table-container"></div>
     </div>
 </section>

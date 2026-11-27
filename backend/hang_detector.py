@@ -53,6 +53,12 @@ WNDENUMPROC = ctypes.WINFUNCTYPE(
 )
 
 
+send_timeout = user32.SendMessageTimeoutW
+send_timeout.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM,
+                         wintypes.UINT, wintypes.UINT, ctypes.POINTER(ctypes.c_size_t)]
+send_timeout.restype = ctypes.c_ssize_t
+
+
 def get_application_windows():
 
     windows = []
@@ -86,16 +92,25 @@ def get_application_windows():
         is_hung = bool(IsHungAppWindow(hwnd))
 
         try:
-            process_name = psutil.Process(pid.value).name()
+            proc = psutil.Process(pid.value)
+            process_name = proc.name()
+            born = proc.create_time()
 
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             process_name = "Unknown"
+            born = 0
 
+        status = "NOT RESPONDING" if is_hung else "RESPONDING"
+        if not is_hung:
+            reply = ctypes.c_size_t()
+            if not send_timeout(hwnd, 0, 0, 0, 2, 120, ctypes.byref(reply)):
+                status = "UNKNOWN"
         windows.append({
+            "born": born, "hwnd": hwnd,
             "pid": pid.value,
             "process_name": process_name,
             "window_title": window_title,
-            "status": "NOT RESPONDING" if is_hung else "RESPONDING"
+            "status": status
         })
 
         return True
@@ -103,7 +118,8 @@ def get_application_windows():
     # Keep callback alive during enumeration
     window_callback = WNDENUMPROC(callback)
 
-    EnumWindows(window_callback, 0)
+    if not EnumWindows(window_callback, 0):
+        raise ctypes.WinError(ctypes.get_last_error())
 
     return windows
 

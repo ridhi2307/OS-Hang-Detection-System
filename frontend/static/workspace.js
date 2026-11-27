@@ -11,7 +11,7 @@ function showWorkspace() {
         else item.removeAttribute("aria-current");
     }
     document.getElementById("pageTitle").textContent =
-        page === "overview" ? "System overview" : document.querySelector("#" + page + " .section-title").textContent;
+        page === "overview" ? "Application overview" : document.querySelector("#" + page + " .section-title").textContent;
     window.scrollTo({top: 0, behavior: "instant"});
 }
 window.addEventListener("hashchange", showWorkspace);
