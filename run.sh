@@ -11,6 +11,9 @@ cd "$PROJECT_DIR" || exit 1
 if [[ -f venv/Scripts/activate ]]; then
     source venv/Scripts/activate || exit 1
 fi
+case "${1:-}" in
+    cpu|disk|allocation) exec python -m backend.resource_labs "$@" ;;
+esac
 if [[ ${1:-} == "lab" ]]; then
     shift
     exec python -m backend.paging "$@"

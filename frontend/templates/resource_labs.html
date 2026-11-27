@@ -1,0 +1,27 @@
+{% for key, spec in labs.items() %}
+<section id="{{ key }}" class="dashboard-section resource-lab">
+    <h2 class="section-title">{{ spec.title }}</h2>
+    <div class="panel">
+        <p>{{ spec.description }}</p>
+        <form class="experiment">
+            <label>Example workload<select class="preset">{% for name, values in spec.presets.items() %}
+                <option value="{{ values | tojson | forceescape }}">{{ name }}</option>{% endfor %}
+            </select></label>
+            {% for field, label in spec.fields %}
+            <label>{{ label }}<input name="{{ field }}" value="{{ (spec.presets.values() | first)[loop.index0] }}" maxlength="512" required></label>
+            {% endfor %}
+            <button>Run comparison</button>
+        </form>
+        <p class="feedback" role="status"></p>
+    </div>
+    <div class="panel lab-results" hidden>
+        <div class="result-heading"><h3>Policy comparison</h3><button type="button" class="export">Export run (.csv)</button></div>
+        <div class="table-container comparison"></div>
+        <div class="result-heading"><h3>Decision trace</h3><label>Policy <select class="policy"></select></label></div>
+        <div class="timeline" hidden></div>
+        <div class="step-controls"><button type="button" class="back" aria-label="Previous step">←</button><output></output>
+            <button type="button" class="next" aria-label="Next step">→</button></div>
+        <div class="table-container trace"></div>
+    </div>
+</section>
+{% endfor %}

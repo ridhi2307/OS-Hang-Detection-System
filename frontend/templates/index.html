@@ -29,6 +29,9 @@
             <a href="#storage">Storage</a>
             <a href="#recovery">Recovery</a>
             <span class="nav-label">Simulations</span>
+            {% for key, spec in labs.items() %}
+            <a href="#{{ key }}">{{ spec.title }}</a>
+            {% endfor %}
             <a href="#lab">Page replacement</a>
             <a href="#deadlock">Deadlock detection</a>
         </nav>
@@ -62,8 +65,8 @@
         <!-- OVERVIEW -->
         <section id="overview">
 
-            <div class="feature-panel"><div><h2>Explore page replacement</h2><p>Compare how FIFO and LRU share a limited set of memory frames.</p><a href="#lab">Open simulation &rarr;</a></div>
-            <div class="frame-art" aria-hidden="true"><i>07</i><i>00</i><i>01</i><i>02</i></div></div>
+            <div class="feature-panel"><div><h2>CPU scheduling lab</h2><p>Run the same jobs under three schedulers and inspect who waits, who runs, and for how long.</p><a href="#cpu">Open simulation &rarr;</a></div>
+            <div class="frame-art" aria-hidden="true"><i>P1</i><i>P2</i><i>P3</i><i>P1</i></div></div>
 
             <div class="stats-grid">
 
@@ -290,13 +293,14 @@
         <!-- DEADLOCK DETECTION -->
         <section id="deadlock" class="dashboard-section">
 
-            <h2 class="section-title">Deadlock Detection</h2>
+            <h2 class="section-title">Deadlock detection</h2>
+            {% include 'live_deadlock.html' %}
 
             <div class="panel">
 
                 <div class="panel-heading">
-                    <h3>Wait-For Graph</h3>
-                    <span>Simulated resource allocation scenario</span>
+                    <h3>Worked example · Three-process wait-for graph</h3>
+                    <span>P1 holds R1 and requests R2. P2 holds R2 and requests R3. P3 holds R3 and requests R1.</span>
                 </div>
 
                 <div id="deadlockResult">
@@ -400,6 +404,7 @@
 
 
         {% include 'lab.html' %}
+        {% include 'resource_labs.html' %}
         <!-- FOOTER -->
         <footer>
             <p>
@@ -415,5 +420,7 @@
 
     <script src="{{ url_for('static', filename='workspace.js') }}"></script>
     <script src="{{ url_for('static', filename='lab.js') }}"></script>
+    <script src="{{ url_for('static', filename='resource_labs.js') }}"></script>
+    <script src="{{ url_for('static', filename='live_deadlock.js') }}"></script>
 </body>
 </html>
