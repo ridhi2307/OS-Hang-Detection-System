@@ -1,69 +1,84 @@
 # OS Hang Detection System
 
-OS Hang Detection System combines live Windows application health and verified recovery with five operating-system simulations. Bash collects a host summary and starts the Python application. Flask serves the interface, psutil samples processes and resources, and SQLite records observations and recovery attempts.
+A local Windows application that detects stalled application windows, records hang incidents, and verifies recovery. The dashboard shows which applications need attention, how long they have been unresponsive, and what happened after a recovery attempt. Five interactive labs demonstrate the operating-system algorithms behind resource management.
 
-## Run on Windows
+## Run the dashboard
 
-Install Python 3.10 or later and Git Bash. Extract the project, open Git Bash in the folder containing `run.sh`, then run:
+Use Windows, Python 3.10 or newer, and Git Bash. Run the monitor in the same desktop session as the applications you want to observe.
 
 ```bash
+git clone https://github.com/ridhi2307/OS-Hang-Detection-System.git
+cd OS-Hang-Detection-System
 python -m venv venv
 source venv/Scripts/activate
 python -m pip install -r requirements.txt
 bash run.sh
 ```
 
-Open **http://127.0.0.1:5000**. Use the **Theme** menu at the top to choose System, Dark, or Light. The browser remembers your selection. Press Ctrl+C in the terminal to stop the server. The dashboard includes its chart library locally. From an activated PowerShell environment, `python run_project.py` starts the same dashboard directly.
+Open [the local dashboard](http://127.0.0.1:5000). The Bash launcher collects a host summary and starts Flask. From PowerShell, an existing environment can launch the same dashboard with `./venv/Scripts/python.exe run_project.py`. Press **Ctrl+C** in the server terminal to stop it.
 
-## Application monitoring and recovery
+## Demonstrate a real hang and recovery
 
-Run the Flask dashboard in the interactive Windows session containing the applications you want to monitor. A background sampler checks visible titled windows about every four seconds. Windows hung-window detection and a bounded WM_NULL message probe provide responsiveness evidence. The default six-second confirmation interval requires repeat observations. Change it in **Application health**. Inconclusive probes appear as Unknown. CPU and RAM are diagnostic context only.
+1. Leave the dashboard running. In a second Git Bash terminal in the project folder, run `./venv/Scripts/python.exe tests/test_hang.py`.
+2. In the test window, click **Simulate application hang**. Its UI thread pauses for 45 seconds. Use **Window health** to inspect its title, PID and Windows responsiveness result.
+3. Open **Application health**. Watch the process move from **Checking** to **Unresponsive** after repeated stalled observations meet the confirmation interval. The default is six seconds. The background monitor samples about every four seconds and the dashboard refreshes every ten seconds. **Refresh** requests a new dashboard snapshot.
+4. In **Recovery**, choose **Restart test application** and confirm. The system verifies that the original PID exited and that the replacement process has a responsive window. Look for **Restart verified** and the replacement PID in the incident log.
+5. To demonstrate spontaneous recovery instead, let the full 45 seconds elapse. A successful probe of the original window records **Responsive again**. Choosing **End test application** records a verified exit separately.
 
-The dashboard groups windows by PID and process creation time. SQLite stores incident openings, verified responses, window disappearance, actions and failure reasons. Start the bundled test window with `python tests/test_hang.py`, press its hang button, then watch **Application health**. In **Recovery**, recheck any incident or explicitly confirm ending/restarting the bundled test app. Restart success requires the original process to exit and a responsive replacement window. Ending a process is logged separately. Other applications support observation and rechecking.
+Restart and end actions apply to the bundled test application and require explicit confirmation. For other applications, the monitor provides evidence and a recheck. Windows hang detection and a bounded window-message probe supply the responsiveness signal. An inconclusive probe appears as **Unknown**. CPU usage and memory pressure provide context when investigating a possible cause.
 
-## Interactive resource graph
+## Monitoring workspace
 
-Select a scenario in **Deadlock detection**. Step through requests and grants, or play the timeline. The detector tests outstanding requests against available instances and releases simulated allocations of processes that can finish. At a deadlocked final state select a victim and inspect the new completion sequence. The custom editor lets you set process and resource counts, capacities, allocations and requests. Its JSON view supports pasting a full scenario. The live two-worker Windows experiment is available below the simulator.
+| Page | What it shows |
+| --- | --- |
+| Overview | Monitored and healthy apps, confirmed hangs, recoveries in progress, verified restarts, health trends, recent activity, CPU, RAM and disk usage. |
+| Application health | One entry per visible application process, filters by state, detection duration and history, and an adjustable confirmation interval. |
+| Window health | Individual visible, titled windows with their owning PIDs, probe results and last check times. One process can own several windows. |
+| Processes | Search by name or PID, sort by CPU or memory, and open process details to inspect start time and associated windows. |
+| Recovery | Active incidents, supported actions, timestamps, attempt results and failure reasons. |
+| Memory and Storage | Physical memory, resident memory by process, drive capacity, usage and free space. |
 
-## Scheduling and allocation experiments
+Use the header to export monitoring reports as CSV or PDF and select a dark, light or system theme. SQLite persists incident and recovery history in `database/os_monitor.db`.
 
-Open **CPU scheduling**, **Disk scheduling**, or **Memory allocation** in the sidebar. Pick a preset or edit the workload, then select **Run comparison**. Each result includes a policy comparison, a decision trace with step controls, and a CSV download containing the inputs, metrics and all decisions.
+## Simulation labs
 
-| Experiment | Policies | What to investigate |
-| --- | --- | --- |
-| CPU scheduling | FCFS, non-preemptive SJF, SRTF, non-preemptive priority, round robin | Compare average wait, turnaround and first response in ticks. Select a dispatch on the timeline. Change the quantum and compare again. |
-| Disk scheduling | FCFS, SSTF, SCAN, C-SCAN, LOOK, C-LOOK | Compare total head travel for the same queue on a 200-cylinder disk. All requests are available initially. |
-| Memory allocation | First fit, best fit, worst fit | Track the free space in each block. On the fragmentation preset, best fit serves all four requests while first fit and worst fit serve three. |
+Each lab accepts an example or custom workload. Playback controls let you pause, change speed, or revisit the decision that caused a particular result.
 
-CPU experiments use one processor, known CPU bursts and zero dispatch overhead. Memory experiments use separate holes with no deallocation. All inputs are simulated. Run the same comparisons from Git Bash to print CSV summaries:
+| Lab | Algorithms and experiments |
+| --- | --- |
+| CPU scheduling | Compare FCFS, non-preemptive SJF, SRTF, non-preemptive priority and round robin. The Gantt timeline and per-process results show completion, waiting, turnaround and response times. |
+| Disk scheduling | Compare FCFS, SSTF, SCAN, C-SCAN, LOOK and C-LOOK. Follow the head across cylinders 0–199 and compare total travel. |
+| Memory allocation | Compare first fit, best fit and worst fit. On the fragmentation preset, inspect why a request can fail even when enough free units remain across separate blocks. |
+| Page replacement | Step through FIFO, LRU and Optimal. On the default 13-reference workload with three frames, they produce 10, 9 and 7 page faults respectively. |
+| Deadlock detection | Follow requests and allocations on a directed graph. Try a safe scenario, a two- or three-process cycle, multiple resource instances, or a custom allocation matrix. Release a simulated victim and inspect which processes can finish. |
+
+**Live deadlock experiment.** On the Deadlock detection page, choose **Start workers** to launch two local Python processes. Match their PIDs in Task Manager, then choose **Request second locks**. Each worker holds the private lock the other needs. **Roll back archive job** releases a lock so the print worker can finish. Both workers have a 60-second deadline.
+
+To reproduce lab results in Git Bash, use the same Python engines from the command line:
 
 ```bash
-bash run.sh cpu --arrivals "0 1 2 3" --bursts "8 4 2 1" --quantum 2
+bash run.sh cpu --arrivals "0 1 2 3" --bursts "8 4 2 1" --priorities "2 1 3 1" --quantum 2
 bash run.sh disk --head 53 --requests "98 183 37 122 14 124 65 67"
 bash run.sh allocation --holes "100 500 200 300 600" --requests "212 417 112 426"
+bash run.sh lab --frames 3 --pages "7 0 1 2 0 3 0 4 2 3 0 3 2"
 ```
 
-## Classroom demonstration
+## Implementation and tests
 
-1. Open **Overview** to inspect application health, recent incidents, verified restarts and real resource metrics.
-2. Open **Page replacement** and run the default sequence with three frames. FIFO produces 10 faults and 3 hits. LRU produces 9 faults and 4 hits. Compare the frame contents and eviction decisions, then change the number of frames and run again.
-3. Open **Deadlock detection → Start workers**. The print and archive jobs run as two local Python processes. Match their PIDs in Task Manager’s Details view. Choose **Request second locks** and inspect the reciprocal waits. Choose **Roll back archive job** to let the print job finish. Each worker enforces a 60-second deadline if you leave the page. The printer and spool file in the example are private synchronization locks. The interactive resource graph on the same page includes a three-process cycle.
-4. To demonstrate recovery, start `python tests/test_hang.py` in another activated terminal. Click **Simulate application hang** in that test window. Refresh **Window health**, then open **Recovery** to confirm termination of the test application. The test window resumes after 45 seconds if left alone. Recovery attempts appear in the history.
-5. Export a CSV or PDF monitoring report from the dashboard. The paging experiment is displayed separately in the lab.
+The [Flask backend](backend/app.py) connects the [Windows window probes](backend/hang_detector.py), [incident tracker](backend/health.py), and [recovery verification](backend/recovery_manager.py). The current dashboard uses [Flask templates](frontend/templates/) and [local JavaScript and CSS](frontend/static/). The earlier React client is available in [frontend-react](frontend-react/).
 
-The same Python paging engine can run directly from Bash:
+Run the standard tests from the project folder with the virtual environment active:
 
 ```bash
-bash run.sh lab --frames 2 --pages "0 1 0 2"
 python -m unittest discover -s tests
 ```
 
-Live window monitoring uses the Windows User32 API. The paging simulation uses only the Python standard library. The earlier React interface remains available in `frontend-react` as an alternative client for the Flask API.
+To also exercise real hang detection, restart and termination on disposable test windows, run the desktop suite in an interactive Windows session:
 
-## Verification
-
-Run `python -m unittest discover -s tests` from the project folder. The Windows desktop recovery test is opt-in because it opens, freezes, restarts and ends disposable copies of the bundled test window. To include it, run `OSHD_DESKTOP_TEST=1 python -m unittest discover -s tests` in Git Bash on an interactive Windows desktop. Tests use temporary databases.
+```bash
+OSHD_DESKTOP_TEST=1 python -m unittest discover -s tests
+```
 
 ## Project credit
 
-Original OS Guardian project by **Ridhima Singh** · https://github.com/ridhi2307
+Original OS Guardian project by [Ridhima Singh](https://github.com/ridhi2307).
