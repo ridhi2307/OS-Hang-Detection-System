@@ -6,10 +6,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>OS Monitoring Dashboard</title>
+    <title>OS Guardian | Resource monitor</title>
 
     <link rel="icon" href="data:,">
 
+    <script src="{{ url_for('static', filename='theme.js') }}"></script>
     <link rel="stylesheet"
           href="{{ url_for('static', filename='style.css') }}">
 </head>
@@ -19,25 +20,19 @@
     <!-- SIDEBAR -->
     <aside class="sidebar">
 
-        <div class="logo">
-            <h2>OS Monitor</h2>
-            <p>Hang Detection System</p>
-        </div>
-
-        <nav>
-            <a href="#overview" class="active">Dashboard</a>
-            <a href="#processes">Process Monitor</a>
-            <a href="#hangs">Hang Detection</a>
-            <a href="#memory">Memory Analysis</a>
-            <a href="#storage">Storage Monitor</a>
-            <a href="#deadlock">Deadlock Detection</a>
+        <div class="logo"><span class="brand-sign" aria-hidden="true">G</span><div><h2>OS Guardian</h2><p>Resource monitor</p></div></div>
+        <nav aria-label="Workspace">
+            <a href="#overview">Overview</a>
+            <a href="#processes">Processes</a>
+            <a href="#hangs">Window health</a>
+            <a href="#memory">Memory</a>
+            <a href="#storage">Storage</a>
+            <a href="#recovery">Recovery</a>
+            <span class="nav-label">Simulations</span>
+            <a href="#lab">Page replacement</a>
+            <a href="#deadlock">Deadlock detection</a>
         </nav>
-
-        <div class="sidebar-footer">
-            <p>Operating Systems Project</p>
-            <small>System Monitoring v1.0</small>
-        </div>
-
+        <div class="sidebar-footer">Local workspace<br>Python + Bash</div>
     </aside>
 
 
@@ -48,28 +43,34 @@
         <header class="topbar">
 
             <div>
-                <h1>System Dashboard</h1>
-                <p>Monitor system performance and application health</p>
+                <h1 id="pageTitle">System overview</h1>
+                <p id="sampleStatus" role="status">Collecting first sample…</p>
             </div>
-
-            <button id="refreshBtn" onclick="loadDashboard()">
-                Refresh Data
-            </button>
-
+            <div class="tools">
+                <label class="theme-control">Theme
+                    <select id="themeChoice">
+                        <option value="system">System</option>
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                    </select>
+                </label>
+                <a href="/api/reports/csv">Export CSV</a><a href="/api/reports/pdf">Export PDF</a>
+                <button id="refreshBtn" onclick="loadDashboard()">Refresh</button></div>
         </header>
 
 
         <!-- OVERVIEW -->
         <section id="overview">
 
-            <h2 class="section-title">System Overview</h2>
+            <div class="feature-panel"><div><h2>Explore page replacement</h2><p>Compare how FIFO and LRU share a limited set of memory frames.</p><a href="#lab">Open simulation &rarr;</a></div>
+            <div class="frame-art" aria-hidden="true"><i>07</i><i>00</i><i>01</i><i>02</i></div></div>
 
             <div class="stats-grid">
 
                 <div class="stat-card">
-                    <p>Total Processes</p>
+                    <p>Sampled processes</p>
                     <h2 id="totalProcesses">--</h2>
-                    <span>Running process information</span>
+                    <span>Up to 25 processes by CPU</span>
                 </div>
 
                 <div class="stat-card">
@@ -85,9 +86,9 @@
                 </div>
 
                 <div class="stat-card">
-                    <p>Deadlock Status</p>
+                    <p>Wait-for graph</p>
                     <h2 id="deadlockStatus">--</h2>
-                    <span>Simulated resource analysis</span>
+                    <span>Simulated deadlock scenario</span>
                 </div>
 
             </div>
@@ -398,6 +399,7 @@
 
 
 
+        {% include 'lab.html' %}
         <!-- FOOTER -->
         <footer>
             <p>
@@ -411,5 +413,7 @@
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 
+    <script src="{{ url_for('static', filename='workspace.js') }}"></script>
+    <script src="{{ url_for('static', filename='lab.js') }}"></script>
 </body>
 </html>

@@ -21,16 +21,7 @@ from backend.memory_analyzer import (
 from backend.storage_monitor import get_storage_information
 from backend.database import get_connection
 
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import (
-    SimpleDocTemplate,
-    Paragraph,
-    Spacer,
-    Table,
-    TableStyle
-)
+
 
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -200,6 +191,17 @@ def generate_recommendations(
 # --------------------------------------------------
 
 def generate_pdf_report():
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.platypus import (
+        SimpleDocTemplate,
+        Paragraph,
+        Spacer,
+        Table,
+        TableStyle
+    )
+
 
     os.makedirs(REPORT_DIR, exist_ok=True)
 
