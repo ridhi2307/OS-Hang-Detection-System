@@ -81,4 +81,4 @@ OSHD_DESKTOP_TEST=1 python -m unittest discover -s tests
 
 ## Project credit
 
-Original OS Guardian project by [Ridhima Singh](https://github.com/ridhi2307).
+Original OS Guardian project by Ridhima Singh & Priya Bora.
