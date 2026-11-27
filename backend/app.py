@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, render_template, request, send_file
+from backend.paging import compare_pages
 from backend.process_monitor import get_running_processes
 from backend.hang_detector import get_application_windows
 from backend.memory_analyzer import (
@@ -212,6 +213,17 @@ def home():
 # -----------------------------------------
 # PROCESS MONITORING API
 # -----------------------------------------
+
+@app.post("/api/lab/paging")
+def paging_api():
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify(error="Submit a page sequence and frame count."), 400
+    try:
+        return jsonify(compare_pages(data.get("pages"), data.get("frames")))
+    except ValueError as error:
+        return jsonify(error=str(error)), 400
+
 
 @app.route("/api/processes")
 def processes_api():

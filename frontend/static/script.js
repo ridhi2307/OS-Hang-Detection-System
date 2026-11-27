@@ -27,7 +27,8 @@ async function loadDashboard() {
 
     const refreshButton = document.getElementById("refreshBtn");
 
-    refreshButton.textContent = "Refreshing...";
+    if (refreshButton.disabled) return;
+    refreshButton.textContent = "Refreshing…";
     refreshButton.disabled = true;
 
     try {
@@ -51,20 +52,16 @@ async function loadDashboard() {
         updateRecoveryTable(data.hang_detection.data);
         loadRecoveryHistory();
 
-        console.log("Dashboard updated successfully!");
+        document.getElementById("sampleStatus").textContent = "Last sampled " + new Date().toLocaleTimeString() + " · Every 15 seconds";
 
     } catch (error) {
 
         console.error("Dashboard error:", error);
 
-        alert(
-            "Unable to load dashboard data. " +
-            "Please check whether the Flask server is running."
-        );
-
+        document.getElementById("sampleStatus").textContent = "Sample unavailable · Refresh to retry.";
     } finally {
 
-        refreshButton.textContent = "Refresh Data";
+        refreshButton.textContent = "Refresh";
         refreshButton.disabled = false;
     }
 }
@@ -340,6 +337,35 @@ function updateDeadlock(deadlock) {
 // PERFORMANCE ANALYTICS CHARTS
 // ========================================
 
+function chartColor(token) {
+    return getComputedStyle(document.documentElement).getPropertyValue(token).trim();
+}
+
+function syncChartTheme() {
+    if (typeof Chart === "undefined") return;
+    Chart.defaults.color = chartColor("--chart-label");
+    Chart.defaults.borderColor = chartColor("--chart-grid");
+    for (const [chart, fill] of [
+        [cpuChart, chartColor("--chart-cpu")],
+        [ramChart, [chartColor("--chart-cpu"), chartColor("--chart-free")]],
+        [diskChart, chartColor("--chart-disk")]
+    ]) {
+        if (chart) {
+            chart.data.datasets[0].backgroundColor = fill;
+            chart.options.plugins.legend.labels.color = Chart.defaults.color;
+            for (const axis of Object.values(chart.options.scales)) {
+                axis.ticks.color = Chart.defaults.color;
+                axis.title.color = Chart.defaults.color;
+                axis.grid.color = Chart.defaults.borderColor;
+                axis.border.color = Chart.defaults.borderColor;
+            }
+            chart.update("none");
+        }
+    }
+}
+syncChartTheme();
+document.addEventListener("guardian-theme", syncChartTheme);
+
 function updateCharts(data) {
 
     // Check whether Chart.js has loaded
@@ -381,7 +407,7 @@ function updateCharts(data) {
                     datasets: [{
                         label: "CPU Usage (%)",
                         data: cpuValues,
-                        backgroundColor: "#3b82f6",
+                        backgroundColor: chartColor("--chart-cpu"),
                         borderRadius: 6
                     }]
                 },
@@ -438,8 +464,8 @@ function updateCharts(data) {
                     datasets: [{
                         data: ramValues,
                         backgroundColor: [
-                            "#2563eb",
-                            "#dbeafe"
+                            chartColor("--chart-cpu"),
+                            chartColor("--chart-free")
                         ],
                         borderWidth: 0
                     }]
@@ -491,7 +517,7 @@ function updateCharts(data) {
                     datasets: [{
                         label: "Disk Usage (%)",
                         data: diskValues,
-                        backgroundColor: "#16a34a",
+                        backgroundColor: chartColor("--chart-disk"),
                         borderRadius: 6
                     }]
                 },
@@ -548,7 +574,7 @@ async function updateRecoveryTable(windows) {
         `;
 
         message.textContent =
-            "System is currently showing no unresponsive applications.";
+            "No unresponsive Python test window in this sample.";
 
         return;
     }
@@ -557,7 +583,7 @@ async function updateRecoveryTable(windows) {
 
         const isTestApp = window.window_title
             .toLowerCase()
-            .includes("application hang simulator");
+            .includes("os hang detection - test application");
 
         return `
             <tr>

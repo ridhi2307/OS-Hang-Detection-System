@@ -7,6 +7,15 @@
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+cd "$PROJECT_DIR" || exit 1
+if [[ -f venv/Scripts/activate ]]; then
+    source venv/Scripts/activate || exit 1
+fi
+if [[ ${1:-} == "lab" ]]; then
+    shift
+    exec python -m backend.paging "$@"
+fi
+
 echo "=========================================="
 echo "          OS GUARDIAN"
 echo "     SYSTEM RESOURCE MONITOR"
@@ -76,8 +85,4 @@ echo "=========================================="
 echo "       STARTING OS GUARDIAN"
 echo "=========================================="
 
-cd "$PROJECT_DIR" || exit 1
-
-source venv/Scripts/activate
-
-python run_project.py
+exec python run_project.py
